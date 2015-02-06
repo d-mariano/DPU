@@ -66,7 +66,6 @@ int dpu_start(){
             case 'q':
                 printf("Goodbye.\n");
                 return dpu_quit();
-                break;
             case 'r':
                 printf("\"display registers\" not yet implemented.\n");
                 break;
