@@ -43,7 +43,7 @@ int dpu_start(){
         
         // Ensure the choice is lower-case
         if(choice[0] <=Z && choice[0] >= A){
-            choice[0] += 32;
+            choice[0] += lowercase;
         }    
         
         // Switch to execture correct function 
@@ -91,9 +91,13 @@ int dpu_start(){
     }    
 }
 
-int dpu_go(){}
+int dpu_go(){
+    return 0;
+}
 
-int dpu_dump(){}
+int dpu_dump(){
+    return 0;
+}
 
 /**
  *	Function to load data from a file into memory.
@@ -153,9 +157,13 @@ int dpu_quit(){
     return 0;    
 }
 
-int dpu_reg(){}
+int dpu_reg(){
+    return 0;
+}
 
-int dpu_trace(){}
+int dpu_trace(){
+    return 0;
+}
 
 /**
  *	Function to write bytes from memory to a file.
@@ -197,7 +205,9 @@ void dpu_WriteFile(void * memory){
     return;
 }
 
-int dpu_reset(){}
+int dpu_reset(){
+    return 0;
+}
 
 /**
  *	Function to print DPU options to the user
@@ -215,3 +225,4 @@ void dpu_help(){
             "\tz\treset all registers to zero\n"
             "\t?, h\tdisplay list of commands\n");
 }
+
