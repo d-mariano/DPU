@@ -6,12 +6,10 @@
  *  dpu.c function prototypes
  **********************************************/
 
-#define MEM_SIZE    16000
+#define MEM_SIZE    (16 * 1024)
 #define BUFF_SIZE   512
 #define CHOICE_SIZE 3
 #define BYTE_SIZE   1
-#define A           65
-#define Z           90
 #define forever     for(;;)
 
 int dpu_start();

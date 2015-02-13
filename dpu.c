@@ -23,7 +23,6 @@ int dpu_start(){
     unsigned char memory[MEM_SIZE];
     unsigned char choice[CHOICE_SIZE];
     unsigned char flush[BYTE_SIZE];
-    unsigned int lowercase = 32;
     int bytes;
 
     // Print title and command list
@@ -42,9 +41,7 @@ int dpu_start(){
         fgets(flush, strlen(flush), stdin);
         
         // Ensure the choice is lower-case
-        if(choice[0] <=Z && choice[0] >= A){
-            choice[0] += lowercase;
-        }    
+        tolower(choice);    
         
         // Switch to execture correct function 
         switch(choice[0]){
@@ -107,6 +104,7 @@ int dpu_LoadFile(void * memory, unsigned int max){
     unsigned int nbytes;
     char buff[BUFF_SIZE];
     char filename[BUFF_SIZE];
+    char error[BUFF_SIZE];
     char flush[CHOICE_SIZE];
 
     // Prompt for filename
@@ -120,8 +118,8 @@ int dpu_LoadFile(void * memory, unsigned int max){
 
     // Open the file
     if((file = fopen(filename, "rb")) == NULL){
-        printf("\ndpu: can't open %s\n", filename);
-        printf("%s\n", strerror(errno));
+        sprintf(error, "write: %s", filename);
+        perror(error);
         return -1;
     }
 
@@ -172,6 +170,7 @@ void dpu_WriteFile(void * memory){
     int nbytes;
     int wbytes;
     char filename[BUFF_SIZE];
+    char error[BUFF_SIZE];
     char flush[CHOICE_SIZE];
 
     // Retrieve filename
@@ -190,7 +189,8 @@ void dpu_WriteFile(void * memory){
 
     // Open the file
     if((file = fopen(filename, "wb")) == NULL){
-        printf("\ndpu: can't open %s\n", filename);
+        sprintf(error, "write: %s", filename);
+        perror(error);
         return;
     }
 
