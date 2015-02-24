@@ -91,7 +91,30 @@ int dpu_go(){
     return 0;
 }
 
-int dpu_dump(){
+int dpu_dump(void * memptr, unsigned offset, unsigned length){
+    unsigned int count;
+    unsigned char line[LINE_LENGTH];
+
+    while(count < length){
+        // Print the offset (block ID)
+        printf("%4x\t", offset);
+        // Create the line
+        for(count = 0; count < LINE_LENGTH; count++, offset++){
+            line[count] = (unsigned char*)(memptr + offset);
+            printf("%2x ", line[count]);
+        }
+        // Move to a newline and continue to ASCII representation
+        printf("\n\t\t");
+        for(count = 0; count < LINE_LENGTH; count++){
+            if(isprint(line[count])){
+                printf(" %c", line[count]);
+            }else{
+                printf(" .");
+            }    
+        }
+        printf("\n");
+    }
+
     return 0;
 }
 
@@ -102,10 +125,10 @@ int dpu_LoadFile(void * memory, unsigned int max){
     FILE* file;
     unsigned int count;
     unsigned int nbytes;
-    char buff[BUFF_SIZE];
-    char filename[BUFF_SIZE];
-    char error[BUFF_SIZE];
-    char flush[CHOICE_SIZE];
+    unsigned char buff[BUFF_SIZE];
+    unsigned char filename[BUFF_SIZE];
+    unsigned char error[BUFF_SIZE];
+    unsigned char flush[CHOICE_SIZE];
 
     // Prompt for filename
     printf("\nEnter a filename: ");
@@ -169,9 +192,9 @@ void dpu_WriteFile(void * memory){
     FILE* file;
     int nbytes;
     int wbytes;
-    char filename[BUFF_SIZE];
-    char error[BUFF_SIZE];
-    char flush[CHOICE_SIZE];
+    unsigned char filename[BUFF_SIZE];
+    unsigned char error[BUFF_SIZE];
+    unsigned char flush[CHOICE_SIZE];
 
     // Retrieve filename
     printf("\nEnter a filename: ");
