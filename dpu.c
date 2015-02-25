@@ -39,9 +39,6 @@ int dpu_start(){
         // Obtain a choice from the user/stdin
         fgets(choice, CHOICE_SIZE, stdin);
         
-        // Flush input stream
-        fgets(flush, strlen(flush), stdin);
-        
         // Ensure the choice is lower-case
         tolower(choice);    
         
@@ -49,10 +46,13 @@ int dpu_start(){
         switch(choice[0]){
             case 'd':
                 printf("Enter offset:\t");
-                scanf("%d", &offset);
+                scanf("%x", &offset);
                 printf("Enter length:\t");
-                scanf("%d", &length);
-                fgets(flush, strlen(flush), stdin);
+                scanf("%x", &length);
+
+                // Flush input 
+                fgets(flush, CHOICE_SIZE, stdin);
+                
                 dpu_dump(memory, offset, length);
                 break;
             case 'g':
@@ -65,7 +65,13 @@ int dpu_start(){
                 }    
                 break;
             case 'm':
-                printf("\"memory modify\" not yet implemented.\n");
+                printf("Enter offset:\t");
+                scanf("%x", &offset);
+                
+                // Flush input
+                fgets(flush, CHOICE_SIZE, stdin);
+        
+                dpu_modify(memory, offset);
                 break;
             case 'q':
                 printf("Goodbye.\n");
@@ -99,27 +105,32 @@ int dpu_go(){
 }
 
 int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
-    unsigned int count;
+    unsigned int i, count;
     unsigned char line[LINE_LENGTH];
+    
+    count = 0;
 
     while(count < length){
         // Print the offset (block ID)
-        printf("%4X\t", offset);
+        printf("%4.4X\t", offset);
         // Create the line
-        for(count = 0; count < LINE_LENGTH; count++, offset++){
-            line[count] = *((char*)memptr + offset);
-            printf("%2x ", line[count]);
+        for(i = 0; i < LINE_LENGTH; i++, offset++){
+            line[i] = *((char*)memptr + offset);
+            printf("%2.2X ", line[i]);
         }
         // Move to a newline and continue to ASCII representation
-        printf("\n\t\t");
-        for(count = 0; count < LINE_LENGTH; count++){
-            if(isprint(line[count])){
-                printf(" %c", line[count]);
+        printf("\n\t");
+        for(i = 0; i < LINE_LENGTH; i++){
+            if(isprint(line[i])){
+                printf(" %c ", line[i]);
             }else{
-                printf(" .");
+                printf(" . ");
             }    
         }
         printf("\n");
+
+        // Keep track of line
+        count += LINE_LENGTH;
     }
 
     return 0;
@@ -130,7 +141,6 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
  **/
 int dpu_LoadFile(void * memory, unsigned int max){
     FILE* file;
-    unsigned int count;
     unsigned int nbytes;
     unsigned char buff[BUFF_SIZE];
     unsigned char filename[BUFF_SIZE];
@@ -179,6 +189,66 @@ int dpu_LoadFile(void * memory, unsigned int max){
     return nbytes;
 
 }
+
+int dpu_modify(void * memptr, unsigned int offset){
+    unsigned char input[INPUT_SIZE];
+    unsigned char flush[CHOICE_SIZE];
+    unsigned char quit = '.';
+    unsigned char byte;
+    unsigned int i, hex; 
+
+    forever{
+        // Set hex flag to high
+        hex = 1;
+        // Print current offset and value
+        printf("%4.4X : %2.2X > ", offset, *((unsigned char*)memptr + offset));
+        // Get input
+        fgets(input, INPUT_SIZE, stdin);
+        // Nullify newline element
+        input[strlen(input) -1] ='\0';
+
+        // Check if input is quit
+        if(input[0] == quit){
+            break;    
+        }
+        // Check if input is null
+        if(strcmp(input, "") == 0){
+            // Ignore invalid input and continue
+            continue;
+        }
+        // Check if input is enter
+        if(strcmp(input, "\n") == 0){
+            // Ignore invalid input continue
+            continue;
+        }    
+
+        // Ensure the string is lowercase
+        tolower(input);
+        // Iterate through input string and ensure it contains only hex
+        for(i = 0; i < strlen(input); i++){
+            // Check to see if the input is hex 
+            if(!((input[i] >= ZERO && input[i] <= NINE) || (input[i] >= 'a' && input[i] <= 'f'))){
+                // Set an error code to skip next input
+                hex = 0;
+                break;
+            }
+        }
+        
+        // Continue with loop if non-hex detected
+        if(!hex){
+            continue;
+        }    
+
+        // Capture input as a hexbyte
+        sscanf(input, "%x", &byte);
+        // Assign offset with new value
+        *((unsigned char*)memptr + offset) = byte;
+        // Increment offset to next byte
+        ++offset;
+    }
+
+    return 0;
+}    
 
 int dpu_quit(){
     return 0;    
