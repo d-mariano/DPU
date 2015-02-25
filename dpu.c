@@ -23,6 +23,8 @@ int dpu_start(){
     unsigned char memory[MEM_SIZE];
     unsigned char choice[CHOICE_SIZE];
     unsigned char flush[BYTE_SIZE];
+    unsigned int offset;
+    unsigned int length;
     int bytes;
 
     // Print title and command list
@@ -46,7 +48,12 @@ int dpu_start(){
         // Switch to execture correct function 
         switch(choice[0]){
             case 'd':
-                printf("\"dump memory\" not yet implemented.\n");
+                printf("Enter offset:\t");
+                scanf("%d", &offset);
+                printf("Enter length:\t");
+                scanf("%d", &length);
+                fgets(flush, strlen(flush), stdin);
+                dpu_dump(memory, offset, length);
                 break;
             case 'g':
                 printf("\"go\" not yet implemented.\n");
@@ -91,16 +98,16 @@ int dpu_go(){
     return 0;
 }
 
-int dpu_dump(void * memptr, unsigned offset, unsigned length){
+int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
     unsigned int count;
     unsigned char line[LINE_LENGTH];
 
     while(count < length){
         // Print the offset (block ID)
-        printf("%4x\t", offset);
+        printf("%4X\t", offset);
         // Create the line
         for(count = 0; count < LINE_LENGTH; count++, offset++){
-            line[count] = (unsigned char*)(memptr + offset);
+            line[count] = *((char*)memptr + offset);
             printf("%2x ", line[count]);
         }
         // Move to a newline and continue to ASCII representation
