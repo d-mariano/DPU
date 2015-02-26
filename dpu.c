@@ -45,9 +45,9 @@ int dpu_start(){
         // Switch to execture correct function 
         switch(choice[0]){
             case 'd':
-                printf("Enter offset:\t");
+                printf("Enter offset in hex:\t");
                 scanf("%x", &offset);
-                printf("Enter length:\t");
+                printf("Enter length in hex:\t");
                 scanf("%x", &length);
 
                 // Flush input 
@@ -65,12 +65,12 @@ int dpu_start(){
                 }    
                 break;
             case 'm':
-                printf("Enter offset:\t");
+                printf("Enter offset in hex:\t");
                 scanf("%x", &offset);
                 
                 // Flush input
                 fgets(flush, CHOICE_SIZE, stdin);
-        
+                       
                 dpu_modify(memory, offset);
                 break;
             case 'q':
@@ -158,7 +158,7 @@ int dpu_LoadFile(void * memory, unsigned int max){
 
     // Open the file
     if((file = fopen(filename, "rb")) == NULL){
-        sprintf(error, "write: %s", filename);
+        sprintf(error, "load: %s", filename);
         perror(error);
         return -1;
     }
@@ -196,6 +196,8 @@ int dpu_modify(void * memptr, unsigned int offset){
     unsigned char quit = '.';
     unsigned char byte;
     unsigned int i, hex; 
+    
+    printf("****All byte values accepted in hex.****\n");
 
     forever{
         // Set hex flag to high
@@ -227,21 +229,21 @@ int dpu_modify(void * memptr, unsigned int offset){
         // Iterate through input string and ensure it contains only hex
         for(i = 0; i < strlen(input); i++){
             // Check to see if the input is hex 
-            if(!((input[i] >= ZERO && input[i] <= NINE) || (input[i] >= 'a' && input[i] <= 'f'))){
+            if(!((input[i] >= '0' && input[i] <= '9') || (input[i] >= 'a' && input[i] <= 'f'))){
                 // Set an error code to skip next input
                 hex = 0;
                 break;
             }
         }
         
-        // Continue with loop if non-hex detected
+        // Continue and ignore value if non-hex detected
         if(!hex){
             continue;
         }    
 
-        // Capture input as a hexbyte
+        // Capture input as a hex-byte
         sscanf(input, "%x", &byte);
-        // Assign offset with new value
+        // Assign offset with new byte value
         *((unsigned char*)memptr + offset) = byte;
         // Increment offset to next byte
         ++offset;
@@ -280,7 +282,7 @@ void dpu_WriteFile(void * memory){
     // Nullify last byte
     filename[strlen(filename) -1] = '\0';
 
-    // Retrienve number of bytes to write
+    // Retrieve number of bytes to write
     printf("\nEnter the amount of bytes to write: ");
     scanf("%d", &nbytes);
     

@@ -12,8 +12,6 @@
 #define BYTE_SIZE       ((int)sizeof(char))
 #define LINE_LENGTH     0x10
 #define INPUT_SIZE      4
-#define ZERO            48
-#define NINE            57
 #define forever         for(;;)
 
 int dpu_start();
