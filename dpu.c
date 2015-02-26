@@ -47,12 +47,23 @@ int dpu_start(){
             case 'd':
                 printf("Enter offset in hex:\t");
                 scanf("%x", &offset);
+                // Test for valid offest
+                if(offset >= MEM_SIZE){
+                    printf("Not a valid offset.\n");
+                    // Flush input buffer
+                    fgets(flush, CHOICE_SIZE, stdin);
+                    break;
+                }
+
                 printf("Enter length in hex:\t");
                 scanf("%x", &length);
-
                 // Flush input 
                 fgets(flush, CHOICE_SIZE, stdin);
-                
+                // Test for valid length
+                if(length < 0){
+                    printf("Not a valid length.\n");    
+                }
+
                 dpu_dump(memory, offset, length);
                 break;
             case 'g':
@@ -67,9 +78,13 @@ int dpu_start(){
             case 'm':
                 printf("Enter offset in hex:\t");
                 scanf("%x", &offset);
-                
                 // Flush input
                 fgets(flush, CHOICE_SIZE, stdin);
+                // Test for valid offset
+                if(offset >= MEM_SIZE){
+                    printf("Not a valid offset.\n");
+                    break;
+                }    
                        
                 dpu_modify(memory, offset);
                 break;
@@ -105,32 +120,45 @@ int dpu_go(){
 }
 
 int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
-    unsigned int i, count;
+    unsigned int i;
     unsigned char line[LINE_LENGTH];
-    
-    count = 0;
+    unsigned int lineLength = LINE_LENGTH;
+    unsigned int count = 0;
 
     while(count < length){
-        // Print the offset (block ID)
+        // Ensure pointer is not out of bounds
+        if(offset == MEM_SIZE){
+            break;
+        }
+
+        // Print the offset/block number
         printf("%4.4X\t", offset);
         // Create the line
-        for(i = 0; i < LINE_LENGTH; i++, offset++){
+        for(i = 0; i < LINE_LENGTH; i++, offset++, count++){
+            // Ensure that the pointer does not go out of bounds
+            if(offset == MEM_SIZE){
+                lineLength = i;
+                break;
+            }
+            // Ensure that the line length does not exceed desired length
+            if(count == length){
+                lineLength = i;
+                break;
+            }      
             line[i] = *((char*)memptr + offset);
             printf("%2.2X ", line[i]);
         }
         // Move to a newline and continue to ASCII representation
         printf("\n\t");
-        for(i = 0; i < LINE_LENGTH; i++){
+        for(i = 0; i < lineLength; i++){
             if(isprint(line[i])){
                 printf(" %c ", line[i]);
             }else{
                 printf(" . ");
             }    
         }
+        // Newline for next block
         printf("\n");
-
-        // Keep track of line
-        count += LINE_LENGTH;
     }
 
     return 0;
@@ -247,6 +275,10 @@ int dpu_modify(void * memptr, unsigned int offset){
         *((unsigned char*)memptr + offset) = byte;
         // Increment offset to next byte
         ++offset;
+        
+        if(offset == MEM_SIZE){
+            break;
+        }    
     }
 
     return 0;
