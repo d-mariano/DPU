@@ -15,9 +15,9 @@
 
 
 /**
- *	Function to provide an everlasting loop that will take
- *	in a character and handle it according to the available
- *	options.
+ *	DPU startup function that initializes memory and provides 
+ *	an everlasting loop that will take in a character and 
+ *	handle it according to the available options.
  **/
 int dpu_start(){
     unsigned char memory[MEM_SIZE];
@@ -26,6 +26,9 @@ int dpu_start(){
     unsigned int offset;
     unsigned int length;
     int bytes;
+
+    // Clear memory
+    memset((void*)memory, 0, MEM_SIZE);
 
     // Print title and command list
     printf("    |=-=-=-=-=-=-=-=-=--->>DPU<<---=-=-=-=-=-=-=-=-=|\n"); 
@@ -59,11 +62,7 @@ int dpu_start(){
                 scanf("%x", &length);
                 // Flush input 
                 fgets(flush, CHOICE_SIZE, stdin);
-                // Test for valid length
-                if(length < 0){
-                    printf("Not a valid length.\n");    
-                }
-
+                
                 dpu_dump(memory, offset, length);
                 break;
             case 'g':
@@ -221,11 +220,10 @@ int dpu_LoadFile(void * memory, unsigned int max){
 int dpu_modify(void * memptr, unsigned int offset){
     unsigned char input[INPUT_SIZE];
     unsigned char flush[CHOICE_SIZE];
-    unsigned char quit = '.';
     unsigned char byte;
     unsigned int i, hex; 
     
-    printf("****All byte values accepted in hex.****\n");
+    printf("*All byte values accepted in hex.*\nEnter '.' to stop.\n\n");
 
     forever{
         // Set hex flag to high
@@ -238,7 +236,7 @@ int dpu_modify(void * memptr, unsigned int offset){
         input[strlen(input) -1] ='\0';
 
         // Check if input is quit
-        if(input[0] == quit){
+        if(input[0] == '.'){
             break;    
         }
         // Check if input is null
