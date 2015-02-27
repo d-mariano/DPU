@@ -108,7 +108,7 @@ int dpu_start(){
                 dpu_help();
                 break;
             default:
-                printf("%c is not an option.  Use H/h/? for help.\n", choice[0]);
+                printf("%c is not an option.  Enter H/h/? for help.\n", choice[0]);
         }
 
     }    
@@ -125,10 +125,10 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
     unsigned int count = 0;
 
     while(count < length){
-        // Ensure pointer is not out of bounds
+    
         if(offset == MEM_SIZE){
             break;
-        }
+        } 
 
         // Print the offset/block number
         printf("%4.4X\t", offset);
@@ -315,9 +315,25 @@ void dpu_WriteFile(void * memory){
     // Retrieve number of bytes to write
     printf("\nEnter the amount of bytes to write: ");
     scanf("%d", &nbytes);
-    
     // Flush input stream
     fgets(flush, CHOICE_SIZE, stdin);
+    
+    // Check if number of bytes specified is greater than memory or less than 0
+    if(nbytes > MEM_SIZE){
+        printf("File not written.  Cannot write more bytes than in memory.\n");
+        return;
+    }else if(nbytes < 0){
+        printf("File not written.  Cannot write a negative amount of bytes.\n");
+        return;
+    }
+    /** 
+     * Check to see if 0 is entered
+     * (nbytes will also be 0 if letters are inputted)
+     */   
+    if(nbytes == 0){
+        printf("0 bytes written.\n");
+        return;
+    }    
 
     // Open the file
     if((file = fopen(filename, "wb")) == NULL){
