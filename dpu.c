@@ -211,6 +211,7 @@ int dpu_LoadFile(void * memory, unsigned int max){
             return nbytes;
         }
     }
+
     fclose(file);
     
     return nbytes;
@@ -323,8 +324,7 @@ void dpu_WriteFile(void * memory){
         printf("File not written.  Cannot write more bytes than in memory.\n");
         return;
     }else if(nbytes < 0){
-        printf("File not written.  Cannot write a negative amount of bytes.\n");
-        return;
+
     }
     /** 
      * Check to see if 0 is entered
@@ -348,6 +348,9 @@ void dpu_WriteFile(void * memory){
     }else{
         printf("%d bytes have been written to %s.\n", wbytes, filename);
     }
+    
+    // Close the file
+    fclose(file);
 
     return;
 }
