@@ -72,7 +72,7 @@ int dpu_start(){
             case 'l':
                 bytes = dpu_LoadFile(memory, MEM_SIZE);
                 if(bytes >= 0){
-                    printf("0x%llx(%u) bytes have been loaded into memory from file.\n", bytes, bytes);        
+                    printf("0x%x(%d) bytes have been loaded into memory from file.\n", (unsigned int)bytes, (unsigned int)bytes);        
                 }    
                 break;
             case 'm':
@@ -95,7 +95,7 @@ int dpu_start(){
                 printf("\"display registers\" not yet implemented.\n");
                 break;
             case 't':
-                printf("\"trace\" not yet imlemeented.\n");
+                printf("\"trace\" not yet imlemented.\n");
                 break;
             case 'w':
                 dpu_WriteFile(memory);
@@ -169,7 +169,7 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
  **/
 int dpu_LoadFile(void * memory, unsigned int max){
     FILE* file;
-    unsigned int nbytes;
+    int nbytes;
     unsigned char buff[BUFF_SIZE];
     unsigned char filename[BUFF_SIZE];
     unsigned char error[BUFF_SIZE];
