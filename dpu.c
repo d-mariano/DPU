@@ -23,8 +23,7 @@ int dpu_start(){
     unsigned char memory[MEM_SIZE];
     unsigned char choice[CHOICE_SIZE];
     unsigned char flush[BYTE_SIZE];
-    unsigned int offset;
-    unsigned int length;
+    unsigned int offset, length, i;
     int bytes;
 
     // Clear memory
@@ -43,7 +42,9 @@ int dpu_start(){
         fgets(choice, CHOICE_SIZE, stdin);
         
         // Ensure the choice is lower-case
-        tolower(choice);    
+        for(i = 0; i < strlen(choice); i++){
+            choice[i] = tolower(choice[i]);    
+        }    
         
         // Switch to execture correct function 
         switch(choice[0]){
@@ -252,7 +253,10 @@ int dpu_modify(void * memptr, unsigned int offset){
         }    
 
         // Ensure the string is lowercase
-        tolower(input);
+        for(i = 0; i < strlen(input); i++){
+            input[i] = tolower(input[i]);
+        }
+
         // Iterate through input string and ensure it contains only hex
         for(i = 0; i < strlen(input); i++){
             // Check to see if the input is hex 
