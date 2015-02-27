@@ -319,21 +319,19 @@ void dpu_WriteFile(void * memory){
     // Flush input stream
     fgets(flush, CHOICE_SIZE, stdin);
     
-    // Check if number of bytes specified is greater than memory or less than 0
+    /** Check if number of bytes specified is greater than memory, 
+     *  less than 0, or 0.  
+     *  In gcc, non-numbers equate to 0. 
+     *  In c++ (Visual Studio), non-numbers are less than 0.
+     */
     if(nbytes > MEM_SIZE){
         printf("File not written.  Cannot write more bytes than in memory.\n");
         return;
-    }else if(nbytes < 0){
-
-    }
-    /** 
-     * Check to see if 0 is entered
-     * (nbytes will also be 0 if letters are inputted)
-     */   
-    if(nbytes == 0){
+    
+    }else if(nbytes <= 0){
         printf("0 bytes written.\n");
         return;
-    }    
+    }
 
     // Open the file
     if((file = fopen(filename, "wb")) == NULL){
