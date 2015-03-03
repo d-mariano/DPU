@@ -6,13 +6,37 @@
  *  dpu.c function prototypes
  **********************************************/
 
-#define MEM_SIZE        (16 * 1024)
-#define BUFF_SIZE       512
-#define CHOICE_SIZE     3
+/*  Sizes */
+#define MEM_SIZE        0x4000
+#define BUFF_SIZE       0x200
+#define CHOICE_SIZE     0x3
 #define BYTE_SIZE       ((int)sizeof(char))
 #define LINE_LENGTH     0x10
-#define INPUT_SIZE      4
+#define INPUT_SIZE      0x4
+#define REG_SIZE        0x20
+#define RF_SIZE         0x10
+
+/* Special Register File Offsets */
+#define REG_SP  0xD
+#define REG_LR  0xE
+#define REG_PC  0xF
+
+/* Registers */
+unsigned long regfile[RF_SIZE];
+unsigned long mar;
+unsigned long mbr;
+unsigned long ir;
+
+/* Flags */
+unsigned char s;
+unsigned char z;
+unsigned char c;
+#define HIGH  '1'
+#define LOW '0'
+
+/* Forever loop */
 #define forever         for(;;)
+
 
 int dpu_start();
 
@@ -35,3 +59,5 @@ void dpu_WriteFile(void * memory);
 int dpu_reset();
 
 void dpu_help();
+
+void dpu_fetch(unsigned long address);
