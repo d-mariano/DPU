@@ -28,7 +28,7 @@ int dpu_start(){
 
     // Clear memory
     memset((void*)memory, 0, MEM_SIZE);
-
+    
     // Print title and command list
     printf("    |=-=-=-=-=-=-=-=-=--->>DPU<<---=-=-=-=-=-=-=-=-=|\n"); 
     dpu_help();
@@ -39,7 +39,7 @@ int dpu_start(){
         printf("> ");
 
         // Obtain a choice from the user/stdin
-        fgets(choice, CHOICE_SIZE, stdin);
+        fgets(choice, BUFF_SIZE, stdin);
         
         // Ensure the choice is lower-case
         for(i = 0; i < strlen(choice); i++){
@@ -50,8 +50,12 @@ int dpu_start(){
         switch(choice[0]){
             case 'd':
                 printf("Enter offset in hex:\t");
-                scanf("%x", &offset);
-                // Test for valid offest
+                // Test for a valid intake
+                if(scanf("%x", &offset) == 0){
+                    printf("Not a valid offset.\n");
+                    break;
+                }    
+                // Test for an offset in range
                 if(offset >= MEM_SIZE){
                     printf("Not a valid offset.\n");
                     // Flush input buffer
@@ -60,9 +64,12 @@ int dpu_start(){
                 }
 
                 printf("Enter length in hex:\t");
-                scanf("%x", &length);
+                if(scanf("%x", &length) == 0){
+                    printf("Not a valid length.\n");
+                    break;
+                }    
                 // Flush input 
-                fgets(flush, CHOICE_SIZE, stdin);
+                fgets(flush, BUFF_SIZE, stdin);
                 
                 dpu_dump(memory, offset, length);
                 break;
@@ -77,10 +84,13 @@ int dpu_start(){
                 break;
             case 'm':
                 printf("Enter offset in hex:\t");
-                scanf("%x", &offset);
+                // Ensure proper value is taken in
+                if(scanf("%x", &offset) == 0){
+                    printf("Not a valid offset.\n");
+                }    
                 // Flush input
-                fgets(flush, CHOICE_SIZE, stdin);
-                // Test for valid offset
+                fgets(flush, BUFF_SIZE, stdin);
+                // Test for an offset in range
                 if(offset >= MEM_SIZE){
                     printf("Not a valid offset.\n");
                     break;
@@ -173,7 +183,7 @@ int dpu_LoadFile(void * memory, unsigned int max){
     unsigned char buff[BUFF_SIZE];
     unsigned char filename[BUFF_SIZE];
     unsigned char error[BUFF_SIZE];
-    unsigned char flush[CHOICE_SIZE];
+    unsigned char flush[BUFF_SIZE];
 
     // Prompt for filename
     printf("\nEnter a filename: ");
@@ -216,26 +226,23 @@ int dpu_LoadFile(void * memory, unsigned int max){
     fclose(file);
     
     return nbytes;
-
 }
 
 int dpu_modify(void * memptr, unsigned int offset){
     unsigned char input[INPUT_SIZE];
-    unsigned char flush[CHOICE_SIZE];
+    unsigned char flush[BUFF_SIZE];
     unsigned char byte;
-    unsigned int i, hex; 
+    unsigned int i;
     
     printf("*All byte values accepted in hex.*\nEnter '.' to stop.\n\n");
 
     forever{
-        // Set hex flag to high
-        hex = 1;
         // Print current offset and value
         printf("%4.4X : %2.2X > ", offset, *((unsigned char*)memptr + offset));
         // Get input
-        fgets(input, INPUT_SIZE, stdin);
+        fgets(input, BUFF_SIZE, stdin);
         // Nullify newline element
-        input[strlen(input) -1] ='\0';
+        input[2] ='\0';
 
         // Check if input is quit
         if(input[0] == '.'){
@@ -257,29 +264,18 @@ int dpu_modify(void * memptr, unsigned int offset){
             input[i] = tolower(input[i]);
         }
 
-        // Iterate through input string and ensure it contains only hex
-        for(i = 0; i < strlen(input); i++){
-            // Check to see if the input is hex 
-            if(!((input[i] >= '0' && input[i] <= '9') || (input[i] >= 'a' && input[i] <= 'f'))){
-                // Set an error code to skip next input
-                hex = 0;
-                break;
-            }
-        }
-        
-        // Continue and ignore value if non-hex detected
-        if(!hex){
-            continue;
-        }    
-
         // Capture input as a hex-byte
-        sscanf(input, "%x", &byte);
+        if(sscanf(input, "%x", &byte) == 0){
+            continue;
+        }
+
         // Assign offset with new byte value
         *((unsigned char*)memptr + offset) = byte;
         // Increment offset to next byte
         ++offset;
         
         if(offset == MEM_SIZE){
+            printf("End of memory.\n");
             break;
         }    
     }
@@ -308,7 +304,7 @@ void dpu_WriteFile(void * memory){
     int wbytes;
     unsigned char filename[BUFF_SIZE];
     unsigned char error[BUFF_SIZE];
-    unsigned char flush[CHOICE_SIZE];
+    unsigned char flush[BUFF_SIZE];
 
     // Retrieve filename
     printf("\nEnter a filename: ");
@@ -319,9 +315,12 @@ void dpu_WriteFile(void * memory){
 
     // Retrieve number of bytes to write
     printf("\nEnter the amount of bytes to write: ");
-    scanf("%d", &nbytes);
+    if(scanf("%d", &nbytes) == 0){
+        printf("Invalid input.\n");
+        return;
+    }    
     // Flush input stream
-    fgets(flush, CHOICE_SIZE, stdin);
+    fgets(flush, BUFF_SIZE, stdin);
     
     /** Check if number of bytes specified is greater than memory, 
      *  less than 0, or 0.  
@@ -378,3 +377,4 @@ void dpu_help(){
             "\t?, h\tdisplay list of commands\n");
 }
 
+void dpu_fetch(unsigned long address){}
