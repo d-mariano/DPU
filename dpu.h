@@ -16,28 +16,19 @@
 #define REG_SIZE        0x20
 #define RF_SIZE         0x10
 
-/* Special Register File Offsets */
+/* Special Registers in Register File Offsets */
 #define REG_SP  0xD
 #define REG_LR  0xE
 #define REG_PC  0xF
 
-/* Registers */
-unsigned long regfile[RF_SIZE];
-unsigned long mar;
-unsigned long mbr;
-unsigned long ir;
-
-/* Flags */
-unsigned char s;
-unsigned char z;
-unsigned char c;
+/* Flag settings */
 #define HIGH  '1'
 #define LOW '0'
 
 /* Forever loop */
 #define forever         for(;;)
 
-
+/* Prototypes */
 int dpu_start();
 
 int dpu_go();
@@ -46,7 +37,7 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length);
 
 int dpu_LoadFile(void * memory, unsigned int max);
 
-int dpu_modify(void * memory, unsigned int offset);
+int dpu_modify(void * memptr, unsigned int offset);
 
 int dpu_quit();
 

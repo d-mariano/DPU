@@ -13,12 +13,22 @@
 #include <string.h>
 #include "dpu.h"
 
+/* Registers */
+unsigned long regfile[RF_SIZE];
+unsigned long mar;
+unsigned long mbr;
+unsigned long ir;
+
+/* Flags */
+unsigned char flag_s;
+unsigned char flag_z;
+unsigned char flag_c;
 
 /**
  *	DPU startup function that initializes memory and provides 
  *	an everlasting loop that will take in a character and 
  *	handle it according to the available options.
- **/
+ */
 int dpu_start(){
     unsigned char memory[MEM_SIZE];
     unsigned char choice[CHOICE_SIZE];
@@ -26,8 +36,8 @@ int dpu_start(){
     unsigned int offset, length, i;
     int bytes;
 
-    // Clear memory
-    memset((void*)memory, 0, MEM_SIZE);
+    // Reset registers
+    dpu_reset();
     
     // Print title and command list
     printf("    |=-=-=-=-=-=-=-=-=--->>DPU<<---=-=-=-=-=-=-=-=-=|\n"); 
@@ -121,7 +131,6 @@ int dpu_start(){
             default:
                 printf("%c is not an option.  Enter H/h/? for help.\n", choice[0]);
         }
-
     }    
 }
 
@@ -129,6 +138,9 @@ int dpu_go(){
     return 0;
 }
 
+/**
+ *  Memory Dump:  Dump length amount of memory, beginning  at offset
+ */
 int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
     unsigned int i;
     unsigned char line[LINE_LENGTH];
@@ -176,7 +188,7 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
 
 /**
  *	Function to load data from a file into memory.
- **/
+ */
 int dpu_LoadFile(void * memory, unsigned int max){
     FILE* file;
     int nbytes;
@@ -228,6 +240,9 @@ int dpu_LoadFile(void * memory, unsigned int max){
     return nbytes;
 }
 
+/**
+ *  Memory Modify:  Modify bytes of memory, in hex, beginning at offset.
+ */
 int dpu_modify(void * memptr, unsigned int offset){
     unsigned char input[INPUT_SIZE];
     unsigned char flush[BUFF_SIZE];
@@ -297,7 +312,7 @@ int dpu_trace(){
 
 /**
  *	Function to write bytes from memory to a file.
- **/
+ */
 void dpu_WriteFile(void * memory){
     FILE* file;
     int nbytes;
@@ -356,14 +371,34 @@ void dpu_WriteFile(void * memory){
     return;
 }
 
+/**
+ *  Reset all registers to 0.
+ */
 int dpu_reset(){
+    int i;
+    
+    // Reset visible registers
+    for(i = 0; i < RF_SIZE; i++){
+        regfile[i] = 0;
+    }
+    // Reset flags
+    flag_s = LOW;
+    flag_z = LOW;
+    flag_c = LOW;
+    // Non-visible registers
+    mar = 0;
+    mbr = 0;
+    ir = 0;
+    
+    printf("Registers have been reset.\n");
+
     return 0;
 }
 
 /**
  *	Function to print DPU options to the user
  *	in the form of a menu.
- **/
+ */
 void dpu_help(){
     printf("\td\tdump memory\n"
             "\tg\tgo - run the entire program\n"
