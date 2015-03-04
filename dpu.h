@@ -12,8 +12,8 @@
 #define CHOICE_SIZE     0x3
 #define BYTE_SIZE       ((int)sizeof(char))
 #define LINE_LENGTH     0x10
-#define INPUT_SIZE      0x4
-#define REG_SIZE        0x20
+#define REG_SIZE_BITS   0x20
+#define REG_SIZE        0x4
 #define RF_SIZE         0x10
 
 /* Special Registers in Register File Offsets */
@@ -22,11 +22,11 @@
 #define REG_PC  0xF
 
 /* Flag settings */
-#define HIGH  '1'
-#define LOW '0'
+#define HIGH    '1'
+#define LOW     '0'
 
 /* Forever loop */
-#define forever         for(;;)
+#define forever for(;;)
 
 /* Prototypes */
 int dpu_start();
@@ -51,4 +51,4 @@ int dpu_reset();
 
 void dpu_help();
 
-void dpu_fetch(unsigned long address);
+void dpu_fetch(void * memory);
