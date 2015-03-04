@@ -18,11 +18,15 @@ unsigned long regfile[RF_SIZE];
 unsigned long mar;
 unsigned long mbr;
 unsigned long ir;
+unsigned short ir1;
+unsigned short ir2;
 
 /* Flags */
-unsigned char flag_s;
-unsigned char flag_z;
-unsigned char flag_c;
+unsigned char flag_sign;
+unsigned char flag_zero;
+unsigned char flag_carry;
+unsigned char flag_stop;
+unsigned char flag_ir;
 
 /**
  *	DPU startup function that initializes memory and provides 
@@ -244,7 +248,7 @@ int dpu_LoadFile(void * memory, unsigned int max){
  *  Memory Modify:  Modify bytes of memory, in hex, beginning at offset.
  */
 int dpu_modify(void * memptr, unsigned int offset){
-    unsigned char input[INPUT_SIZE];
+    unsigned char input[BUFF_SIZE];
     unsigned char flush[BUFF_SIZE];
     unsigned char byte;
     unsigned int i;
@@ -382,13 +386,16 @@ int dpu_reset(){
         regfile[i] = 0;
     }
     // Reset flags
-    flag_s = LOW;
-    flag_z = LOW;
-    flag_c = LOW;
+    flag_sign = LOW;
+    flag_zero = LOW;
+    flag_carry = LOW;
+    flag_stop = LOW;
+    flag_ir = LOW;
     // Non-visible registers
     mar = 0;
     mbr = 0;
-    ir = 0;
+    ir1 = 0;
+    ir2 = 0;
     
     printf("Registers have been reset.\n");
 
@@ -412,4 +419,42 @@ void dpu_help(){
             "\t?, h\tdisplay list of commands\n");
 }
 
-void dpu_fetch(unsigned long address){}
+/**
+ * Fetch:  Fetch an instruction from memory, at the address
+ *         of the program counter.  Memory is 8 bits, and so
+ *         4 bytes must be collected into the MBR, starting at the
+ *         memory offset specified by MAR, as the Memory Buffer 
+ *         Register is 32 bits.  This requires bit shifting 8 bits 
+ *         to the left for each byte.  Doing this 4 times will equate 
+ *         to 32 bits read.  The PC is incremented by the size of one
+ *         register/instruction after the contents of MBR are stored in
+ *         the Instruction Register.
+ */         
+void dpu_fetch(void * memory){
+    int i, cycles;
+   
+    /**  
+     *  Amount of cycles needed for bitshifting bytes
+     *  into a register to equate to register size
+     */
+    cycles = REG_SIZE / BYTE_SIZE;  
+
+    /* MAR <- PC */
+    mar = regfile[REG_PC];
+    
+    /* MBR <- memory[MAR] */
+    for(i = 0; i < cycles; i++, mbr << 8 ){
+        /* Add memory at mar to mbr */
+        mbr += *((long*)memory + (mar + i));
+    }    
+
+    /* IR <- MBR */
+    ir = mbr;
+
+    /* PC <- PC + 1 instruction */
+    regfile[REG_PC] += REG_SIZE;
+
+
+}
+
+
