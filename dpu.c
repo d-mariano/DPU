@@ -101,6 +101,7 @@ int dpu_start(){
                 // Ensure proper value is taken in
                 if(scanf("%x", &offset) == 0){
                     printf("Not a valid offset.\n");
+                    break;
                 }    
                 // Flush input
                 fgets(flush, BUFF_SIZE, stdin);
@@ -116,10 +117,11 @@ int dpu_start(){
                 printf("Goodbye.\n");
                 return dpu_quit();
             case 'r':
-                printf("\"display registers\" not yet implemented.\n");
+                dpu_reg();
                 break;
             case 't':
-                printf("\"trace\" not yet imlemented.\n");
+                dpu_fetch(memory);
+                dpu_reg();
                 break;
             case 'w':
                 dpu_WriteFile(memory);
@@ -306,10 +308,43 @@ int dpu_quit(){
     return 0;    
 }
 
+/**
+ * Register dump:   Display all registers and flags with their current values.
+ */
 int dpu_reg(){
+    unsigned int i;
+    unsigned int linebreak = 6;
+
+    /* Print regsiter file */
+    for(i = 0; i < RF_SIZE; i ++){
+        if(i % linebreak == 0){
+            printf("\n");
+        }
+        if(i == REG_SP){
+            printf(" SP:%8.8X ", regfile[REG_SP]);
+        }else if(i == REG_LR){
+            printf(" LR:%08lX ",  regfile[REG_LR]);
+        }else if(i == REG_PC){
+            printf(" PC:%8.8X ",  regfile[REG_PC]);
+        }else{    
+            printf("r%2.2d:%8.8X ", i,  regfile[i]);
+        }    
+    }    
+    
+    /* Print flags */
+    printf("\t SZC:%c%c%c", flag_sign, flag_zero, flag_carry);
+
+    /* Print non-visible registers */
+    printf("\n     MAR:%8.8X   MBR:%8.8X   IR:%8.8X   S Flag:%c   IR Flag:%c\n",  mar,  mbr,  ir, flag_stop, flag_ir);
+
     return 0;
 }
 
+/**
+ * Trace:   Single step through instruction after instruction, beginning with 
+ *          the program counter's position.  Register values will be displayed 
+ *          after each trace.
+ */
 int dpu_trace(){
     return 0;
 }
@@ -379,7 +414,7 @@ void dpu_WriteFile(void * memory){
  *  Reset all registers to 0.
  */
 int dpu_reset(){
-    int i;
+    unsigned int i;
     
     // Reset visible registers
     for(i = 0; i < RF_SIZE; i++){
@@ -431,11 +466,11 @@ void dpu_help(){
  *         the Instruction Register.
  */         
 void dpu_fetch(void * memory){
-    int i, cycles;
+    unsigned int i, cycles;
    
     /**  
      *  Amount of cycles needed for bitshifting bytes
-     *  into a register to equate to register size
+     *  into a 32 bit register from 8 bit memory
      */
     cycles = REG_SIZE / BYTE_SIZE;  
 
@@ -443,9 +478,10 @@ void dpu_fetch(void * memory){
     mar = regfile[REG_PC];
     
     /* MBR <- memory[MAR] */
-    for(i = 0; i < cycles; i++, mbr << 8 ){
+    for(i = 0; i < cycles; i++){
+        mbr = mbr << 8;
         /* Add memory at mar to mbr */
-        mbr += *((long*)memory + (mar + i));
+        mbr += *((unsigned char*)memory + (mar + i));
     }    
 
     /* IR <- MBR */
@@ -453,8 +489,6 @@ void dpu_fetch(void * memory){
 
     /* PC <- PC + 1 instruction */
     regfile[REG_PC] += REG_SIZE;
-
-
 }
 
 
