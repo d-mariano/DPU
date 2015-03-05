@@ -18,8 +18,6 @@ unsigned long regfile[RF_SIZE];
 unsigned long mar;
 unsigned long mbr;
 unsigned long ir;
-unsigned short ir1;
-unsigned short ir2;
 
 /* Flags */
 unsigned char flag_sign;
@@ -312,6 +310,7 @@ int dpu_quit(){
  * Register dump:   Display all registers and flags with their current values.
  */
 int dpu_reg(){
+    unsigned short ir0, ir1;
     unsigned int i;
     unsigned int linebreak = 6;
 
@@ -333,9 +332,13 @@ int dpu_reg(){
     
     /* Print flags */
     printf("\t SZC:%c%c%c", flag_sign, flag_zero, flag_carry);
+    
+    /* Parse IR0 and IR1 */
+    ir0 = getir0(ir);
+    ir1 = getir1(ir);
 
     /* Print non-visible registers */
-    printf("\n     MAR:%8.8X   MBR:%8.8X   IR:%8.8X   S Flag:%c   IR Flag:%c\n",  mar,  mbr,  ir, flag_stop, flag_ir);
+    printf("\n   MAR:%8.8X   MBR:%8.8X   IR0:%4.4X   IR1:%4.4X   S Flag:%c   IR Flag:%c\n",  mar,  mbr, ir0, ir1, flag_stop, flag_ir);
 
     return 0;
 }
@@ -429,8 +432,7 @@ int dpu_reset(){
     // Non-visible registers
     mar = 0;
     mbr = 0;
-    ir1 = 0;
-    ir2 = 0;
+    ir = 0;
     
     printf("Registers have been reset.\n");
 
@@ -491,4 +493,13 @@ void dpu_fetch(void * memory){
     regfile[REG_PC] += REG_SIZE;
 }
 
+/* Process to parse the first IR register, IR0 */
+unsigned short getir0(unsigned long ir){
+    return ir >> 16;
+}    
+
+/* Process to parse the second IR register, IR1 */
+unsigned short getir1(unsigned long ir){
+    return ir & 0x0000FFFF;
+}
 
