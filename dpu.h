@@ -52,3 +52,8 @@ int dpu_reset();
 void dpu_help();
 
 void dpu_fetch(void * memory);
+
+unsigned short getir0(unsigned long ir);
+
+unsigned short getir1(unsigned long ir);
+
