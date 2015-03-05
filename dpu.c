@@ -125,7 +125,8 @@ int dpu_start(){
                 dpu_WriteFile(memory);
                 break;
             case 'z':
-                printf("\"reset registers\" not yet implemented.\n");
+                dpu_reset();
+                printf("Registers have been reset.\n");
                 break;
             // If the user selects '?' then the case will fall into 'h'
             case '?':
@@ -322,7 +323,7 @@ int dpu_reg(){
         if(i == REG_SP){
             printf(" SP:%8.8X ", regfile[REG_SP]);
         }else if(i == REG_LR){
-            printf(" LR:%08lX ",  regfile[REG_LR]);
+            printf(" LR:%8.8X ",  regfile[REG_LR]);
         }else if(i == REG_PC){
             printf(" PC:%8.8X ",  regfile[REG_PC]);
         }else{    
@@ -434,8 +435,6 @@ int dpu_reset(){
     mbr = 0;
     ir = 0;
     
-    printf("Registers have been reset.\n");
-
     return 0;
 }
 
