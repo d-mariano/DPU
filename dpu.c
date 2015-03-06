@@ -251,7 +251,7 @@ int dpu_LoadFile(void * memory, unsigned int max){
 int dpu_modify(void * memptr, unsigned int offset){
     unsigned char input[BUFF_SIZE];
     unsigned char flush[BUFF_SIZE];
-    unsigned char byte;
+    unsigned int byte;
     unsigned int i;
     
     printf("*All byte values accepted in hex.*\nEnter '.' to stop.\n\n");
