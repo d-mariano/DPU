@@ -27,6 +27,19 @@
 /* Forever loop */
 #define forever for(;;)
 
+/* Registers */
+static unsigned long regfile[RF_SIZE];
+static unsigned long mar;
+static unsigned long mbr;
+static unsigned long ir;
+
+/* Flags */
+static unsigned char flag_sign;
+static unsigned char flag_zero;
+static unsigned char flag_carry;
+static unsigned char flag_stop;
+static unsigned char flag_ir;
+
 /* Prototypes */
 int dpu_start();
 
