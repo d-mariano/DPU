@@ -61,7 +61,7 @@ int dpu_start(){
                     fgets(flush, BUFF_SIZE, stdin);
                     break;
                 }
-
+                fgets(flush,BUFF_SIZE, stdin);
                 printf("Enter length in hex:\t");
                 if(scanf("%x", &length) == 0){
                     printf("Not a valid length.\n");
@@ -486,6 +486,6 @@ unsigned short getir0(unsigned long ir){
 
 /* Process to parse the second IR register, IR1 */
 unsigned short getir1(unsigned long ir){
-    return ir & 0x0000FFFF;
+    return ir & IR1_MASK;
 }
 
