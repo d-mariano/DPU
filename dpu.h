@@ -8,8 +8,7 @@
 
 /*  Sizes */
 #define MEM_SIZE        0x4000
-#define BUFF_SIZE       0x200
-#define CHOICE_SIZE     0x3
+#define BUFF_SIZE       0x100
 #define BYTE_SIZE       ((int)sizeof(char))
 #define LINE_LENGTH     0x10
 #define REG_SIZE_BITS   0x20
