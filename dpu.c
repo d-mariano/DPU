@@ -33,8 +33,8 @@ unsigned char flag_ir;
  */
 int dpu_start(){
     unsigned char memory[MEM_SIZE];
-    unsigned char choice[CHOICE_SIZE];
-    unsigned char flush[BYTE_SIZE];
+    unsigned char choice[BUFF_SIZE];
+    unsigned char flush[BUFF_SIZE];
     unsigned int offset, length, i;
     int bytes;
 
@@ -71,7 +71,7 @@ int dpu_start(){
                 if(offset >= MEM_SIZE){
                     printf("Not a valid offset.\n");
                     // Flush input buffer
-                    fgets(flush, CHOICE_SIZE, stdin);
+                    fgets(flush, BUFF_SIZE, stdin);
                     break;
                 }
 
