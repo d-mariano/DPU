@@ -13,19 +13,6 @@
 #include <string.h>
 #include "dpu.h"
 
-/* Registers */
-unsigned long regfile[RF_SIZE];
-unsigned long mar;
-unsigned long mbr;
-unsigned long ir;
-
-/* Flags */
-unsigned char flag_sign;
-unsigned char flag_zero;
-unsigned char flag_carry;
-unsigned char flag_stop;
-unsigned char flag_ir;
-
 /**
  *	DPU startup function that initializes memory and provides 
  *	an everlasting loop that will take in a character and 
@@ -339,7 +326,7 @@ int dpu_reg(){
     ir1 = getir1(ir);
 
     /* Print non-visible registers */
-    printf("\n   MAR:%8.8X   MBR:%8.8X   IR0:%4.4X   IR1:%4.4X   S Flag:%c   IR Flag:%c\n",  mar,  mbr, ir0, ir1, flag_stop, flag_ir);
+    printf("\n   MAR:%8.8X   MBR:%8.8X   IR0:%4.4X   IR1:%4.4X   Stop:%c   IR Flag:%c\n",  mar,  mbr, ir0, ir1, flag_stop, flag_ir);
 
     return 0;
 }
