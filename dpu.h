@@ -14,6 +14,7 @@
 #define REG_SIZE_BITS   0x20
 #define REG_SIZE        0x4
 #define RF_SIZE         0x10
+#define IR1_MASK        0x0000FFFF
 
 /* Special Registers in Register File Offsets */
 #define REG_SP  0xD
