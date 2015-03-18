@@ -71,30 +71,31 @@
 #define IMM_VALUE   ((cir >> 4) & 0xFF)
 #define CONDITION   ((cir >> 8) & 0xF)
 #define COND_ADDR   cir & 0xFF
-#define LOAD        ((cir >> 11) & 0x1)
+#define LOAD_BIT    ((cir >> 11) & 0x1)
+#define BYTE_BIT    ((cir >> 10) & 0x1)
 #define HIGH_LOW    ((cir >> 10) & 0x1)
 #define R           ((cir >> 8) & 0x1)
 #define REG_LIST    cir & 0xFF
 #define LINK_BIT    ((cir >> 12) & 0x1)
-#define OFFSET12   cir & 0xFFF
+#define OFFSET12    cir & 0xFFF
 
 /* Data Processing OpCodes */
-#define DATA_AND 0x0
-#define DATA_EOR 0x1
-#define DATA_SUB 0x2
-#define DATA_SXB 0x3
-#define DATA_ADD 0x4
-#define DATA_ADC 0x5
-#define DATA_LSR 0x6
-#define DATA_LSL 0x7
-#define DATA_TST 0x8
-#define DATA_TEQ 0x9
-#define DATA_CMP 0xA
-#define DATA_ROR 0xB
-#define DATA_ORR 0xC
-#define DATA_MOV 0xD
-#define DATA_BIC 0xE
-#define DATA_MVN 0xF
+#define DATA_AND 0x0 & OPERATION
+#define DATA_EOR 0x1 & OPERATION
+#define DATA_SUB 0x2 & OPERATION
+#define DATA_SXB 0x3 & OPERATION
+#define DATA_ADD 0x4 & OPERATION
+#define DATA_ADC 0x5 & OPERATION
+#define DATA_LSR 0x6 & OPERATION
+#define DATA_LSL 0x7 & OPERATION
+#define DATA_TST 0x8 & OPERATION
+#define DATA_TEQ 0x9 & OPERATION 
+#define DATA_CMP 0xA & OPERATION 
+#define DATA_ROR 0xB & OPERATION
+#define DATA_ORR 0xC & OPERATION 
+#define DATA_MOV 0xD & OPERATION
+#define DATA_BIC 0xE & OPERATION
+#define DATA_MVN 0xF & OPERATION
 
 /* Immediate OpCodes */
 #define MOV 0x0 & OPCODE
