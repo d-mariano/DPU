@@ -15,8 +15,8 @@
 
 /**
  *	DPU startup function that initializes memory and provides 
- *	an everlasting loop that will take in a character and 
- *	handle it according to the available options.
+ *	an everlasting loop.  An input character  is taken and 
+ *	handled according to the available options.
  */
 int dpu_start(){
     unsigned char memory[MEM_SIZE];
@@ -25,14 +25,14 @@ int dpu_start(){
     unsigned int offset, length, i;
     int bytes;
 
-    // Reset registers
+    /* Reset registers */
     dpu_reset();
     
-    // Print title and command list
+    /*  Print title and command list */
     printf("    |=-=-=-=-=-=-=-=-=--->>DPU<<---=-=-=-=-=-=-=-=-=|\n"); 
     dpu_help();
     
-    // Loop forever
+    /*  Loop forever */
     forever{
         // Prompt
         printf("> ");
@@ -73,6 +73,12 @@ int dpu_start(){
                 dpu_dump(memory, offset, length);
                 break;
             case 'g':
+                /*
+                 * while(!flag_stop){
+                 *     dpu_instCycle(memory);
+                 * }
+                 */
+
                 printf("\"go\" not yet implemented.\n");
                 break;
             case 'l':
@@ -105,7 +111,7 @@ int dpu_start(){
                 dpu_reg();
                 break;
             case 't':
-                dpu_fetch(memory);
+                dpu_instCycle(memory);  
                 dpu_reg();
                 break;
             case 'w':
@@ -130,6 +136,7 @@ int dpu_go(){
     return 0;
 }
 
+
 /**
  *  Memory Dump:  Dump length amount of memory, beginning  at offset
  */
@@ -145,16 +152,16 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
             break;
         } 
 
-        // Print the offset/block number
+        /* Print the offset/block number */
         printf("%4.4X\t", offset);
-        // Create the line
+        /* Create the line */
         for(i = 0; i < LINE_LENGTH; i++, offset++, count++){
-            // Ensure that the pointer does not go out of bounds
+            /* Ensure that the pointer does not go out of bounds */
             if(offset == MEM_SIZE){
                 lineLength = i;
                 break;
             }
-            // Ensure that the line length does not exceed desired length
+            /* Ensure that the line length does not exceed desired length */
             if(count == length){
                 lineLength = i;
                 break;
@@ -162,7 +169,9 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
             line[i] = *((char*)memptr + offset);
             printf("%2.2X ", line[i]);
         }
-        // Move to a newline and continue to ASCII representation
+        /* Move to a newline and continue to ASCII representation of the 
+         * line dumped.
+         */   
         printf("\n\t");
         for(i = 0; i < lineLength; i++){
             if(isprint(line[i])){
@@ -171,12 +180,13 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
                 printf(" . ");
             }    
         }
-        // Newline for next block
+        /* Newline for next block */
         printf("\n");
     }
 
     return 0;
 }
+
 
 /**
  *	Function to load data from a file into memory.
@@ -232,8 +242,10 @@ int dpu_LoadFile(void * memory, unsigned int max){
     return nbytes;
 }
 
+
 /**
- *  Memory Modify:  Modify bytes of memory, in hex, beginning at offset.
+ *  Memory Modify:  
+ *      Modify bytes of memory, in hex, beginning at offset.
  */
 int dpu_modify(void * memptr, unsigned int offset){
     unsigned char input[BUFF_SIZE];
@@ -286,7 +298,6 @@ int dpu_modify(void * memptr, unsigned int offset){
             break;
         }    
     }
-
     return 0;
 }    
 
@@ -294,54 +305,43 @@ int dpu_quit(){
     return 0;    
 }
 
+
 /**
- * Register dump:   Display all registers and flags with their current values.
+ * Register dump:   
+ *      Display all registers and flags with their current values.
  */
 int dpu_reg(){
-    unsigned short ir0, ir1;
     unsigned int i;
-    unsigned int linebreak = 6;
 
     /* Print regsiter file */
     for(i = 0; i < RF_SIZE; i ++){
-        if(i % linebreak == 0){
+        if(i % LINE_BREAK == 0){
             printf("\n");
         }
-        if(i == REG_SP){
-            printf(" SP:%8.8X ", regfile[REG_SP]);
-        }else if(i == REG_LR){
-            printf(" LR:%8.8X ",  regfile[REG_LR]);
-        }else if(i == REG_PC){
-            printf(" PC:%8.8X ",  regfile[REG_PC]);
+        if(i == RF_SP){
+            printf(" SP:%8.8X ", SP);
+        }else if(i == RF_LR){
+            printf(" LR:%8.8X ",  LR);
+        }else if(i == RF_PC){
+            printf(" PC:%8.8X ",  PC);
         }else{    
             printf("r%2.2d:%8.8X ", i,  regfile[i]);
         }    
     }    
     
     /* Print flags */
-    printf("\t SZC:%c%c%c", flag_sign, flag_zero, flag_carry);
-    
-    /* Parse IR0 and IR1 */
-    ir0 = getir0(ir);
-    ir1 = getir1(ir);
+    printf("\t SZC:%d%d%d", flag_sign, flag_zero, flag_carry);
 
     /* Print non-visible registers */
-    printf("\n   MAR:%8.8X   MBR:%8.8X   IR0:%4.4X   IR1:%4.4X   Stop:%c   IR Flag:%c\n",  mar,  mbr, ir0, ir1, flag_stop, flag_ir);
+    printf("\n   MAR:%8.8X   MBR:%8.8X   IR0:%4.4X   IR1:%4.4X   Stop:%d   IR Flag:%d\n",  mar,  mbr, IR0, IR1, flag_stop, flag_ir);
 
     return 0;
 }
 
-/**
- * Trace:   Single step through instruction after instruction, beginning with 
- *          the program counter's position.  Register values will be displayed 
- *          after each trace.
- */
-int dpu_trace(){
-    return 0;
-}
 
 /**
- *	Function to write bytes from memory to a file.
+ *	Write to File:
+ *	    Function to write bytes from memory to a file.
  */
 void dpu_WriteFile(void * memory){
     FILE* file;
@@ -401,8 +401,9 @@ void dpu_WriteFile(void * memory){
     return;
 }
 
+
 /**
- *  Reset all registers to 0.
+ *  Reset: Reset all registers to 0.
  */
 int dpu_reset(){
     unsigned int i;
@@ -412,22 +413,25 @@ int dpu_reset(){
         regfile[i] = 0;
     }
     // Reset flags
-    flag_sign = LOW;
-    flag_zero = LOW;
-    flag_carry = LOW;
-    flag_stop = LOW;
-    flag_ir = LOW;
+    flag_sign = 0;
+    flag_zero = 0;
+    flag_carry = 0;
+    flag_stop = 0;
+    flag_ir = 0;
     // Non-visible registers
     mar = 0;
     mbr = 0;
     ir = 0;
+    // Unofficial current instruction register
+    cir = 0;
     
     return 0;
 }
 
+
 /**
- *	Function to print DPU options to the user
- *	in the form of a menu.
+ * Help:  Function to print DPU options to the user
+ *	      in the form of a menu.
  */
 void dpu_help(){
     printf("\td\tdump memory\n"
@@ -442,6 +446,7 @@ void dpu_help(){
             "\t?, h\tdisplay list of commands\n");
 }
 
+
 /**
  * Fetch:  Fetch an instruction from memory, at the address
  *         of the program counter.  Memory is 8 bits, and so
@@ -454,20 +459,14 @@ void dpu_help(){
  *         the Instruction Register.
  */         
 void dpu_fetch(void * memory){
-    unsigned int i, cycles;
-   
-    /**  
-     *  Amount of cycles needed for bitshifting bytes
-     *  into a 32 bit register from 8 bit memory
-     */
-    cycles = REG_SIZE / BYTE_SIZE;  
+    unsigned int i;
 
     /* MAR <- PC */
-    mar = regfile[REG_PC];
+    mar = PC;
     
     /* MBR <- memory[MAR] */
-    for(i = 0; i < cycles; i++){
-        mbr = mbr << 8;
+    for(i = 0; i < CYCLES; i++){
+        mbr = mbr << BITS;
         /* Add memory at mar to mbr */
         mbr += *((unsigned char*)memory + (mar + i));
     }    
@@ -476,16 +475,112 @@ void dpu_fetch(void * memory){
     ir = mbr;
 
     /* PC <- PC + 1 instruction */
-    regfile[REG_PC] += REG_SIZE;
+    PC += REG_SIZE;
 }
 
-/* Process to parse the first IR register, IR0 */
-unsigned short getir0(unsigned long ir){
-    return ir >> 16;
+
+/**
+ * Execute: Recognize instruction type, parse instruction fields, execute 
+ *          instruction.
+ */
+void dpu_execute(void *memory){
+    
+    if(DATA_PROC){
+    
+    }else if(LOAD_STORE){
+            
+    }else if(IMMEDIATE){
+        if(MOV){
+            regfile[RD] = IMM_VALUE;    
+        }else if(CMP){
+            if(regfile[RD] == IMM_VALUE){
+                flag_zero = 1;
+                flag_carry = 1;
+            }else{
+                flag_zero = 0;
+            }
+        }else if(ADD){
+            regfile[RD] += IMM_VALUE;
+        }else if(SUB){
+            regfile[RD] -= IMM_VALUE;
+        }    
+    }else if(COND_BRANCH){
+        if(EQ){
+            if(flag_zero){
+                PC += (signed)COND_ADDR;
+            }    
+        }else if(NE){
+            if(!flag_zero){
+                PC += (signed)COND_ADDR;
+            }
+        }else if(CS){
+            if(flag_carry){
+                PC += (signed)COND_ADDR;
+            }
+        }else if(CC){
+            if(!flag_carry){
+                PC += (signed)COND_ADDR;
+            }
+        }else if(MI){
+            if(flag_sign){
+                PC += (signed)COND_ADDR;      
+            }    
+        }else if(PL){
+            if(!flag_sign){
+                PC += (signed)COND_ADDR;
+            }
+        }else if(HI){
+            if(flag_carry && !flag_sign){
+                PC += (signed)COND_ADDR;   
+            }
+        }else if(LS){
+            if(!flag_carry && flag_sign){
+                PC += (signed)COND_ADDR;
+            }
+        }else if(AL){
+            PC += (signed)COND_ADDR;
+        }
+    }else if(PUSH_PULL){
+    
+    }else if(BRANCH){
+
+    }else if(STOP){
+        flag_stop = 1;
+    }    
+    
+    return;
 }    
 
-/* Process to parse the second IR register, IR1 */
-unsigned short getir1(unsigned long ir){
-    return ir & IR1_MASK;
+
+/**
+ * Instruction Cycle:   
+ *      A function cycle consists of a fetch, which provides two 
+ *      instructions, and an execute for each of said instructions.  
+ *      An IR flag is uses to determine the which instruction is to be
+ *      executed from either 16-bit IR0 or IR1 of the 32-bit 
+ *      Instruction Register.  If the flag is high, IR1 will be executed,
+ *      then the flag will be set low.  If the flag is low, a fetch is made,
+ *      providing IR0 and IR1 with the new instructions, and the flag is 
+ *      then set high.  
+ *
+ */
+void dpu_instCycle(void * memory){
+    /* Determine which IR to use via IR Active flag */
+    if(flag_ir == 0){
+        /* Fetch new set of instructions */
+        dpu_fetch(memory);
+        /*   */
+        cir = IR0;
+        dpu_execute(memory);
+        flag_ir = 1;
+    }else{
+        cir = IR1;
+        dpu_execute(memory);
+        flag_ir = 0;
+    }
+     
+    return;
 }
+
+
 
