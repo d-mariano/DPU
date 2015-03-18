@@ -480,16 +480,90 @@ void dpu_fetch(void * memory){
 
 
 /**
- * Execute: Recognize instruction type, parse instruction fields, execute 
- *          instruction.
+ * Execute: Recognize instruction type, acknowledge instruction 
+ *          fields, execute instruction based on the instruction fields.
  */
 void dpu_execute(void *memory){
+    /* Recognize instruction type: */
     
+    /* 
+     * Data Processing 
+     */
     if(DATA_PROC){
-    
-    }else if(LOAD_STORE){
+        /* Acknowledge Operation field */
+        if(DATA_AND){
+            regfile[RD] &= RN;
+        }else if(DATA_EOR){
+            regfile[RD] ^= RN;
+        }else if(DATA_SUB){
+            regfile[RD] -= RN;
+        }else if(DATA_SXB){
+            regfile[RD] = (signed)RN;
+        }else if(DATA_ADD){
+            regfile[RD] += RN;
+        }else if(DATA_ADC){
+            regfile[RD] += RN + flag_carry; 
+        }else if(DATA_LSR){
+            regfile[RD] = regfile[RD] >> RN;
+        }else if(DATA_LSL){
+            regfile[RD] = regfile[RD] << RN;
+        }else if(DATA_TST){
+            if(regfile[RD] & RN){ 
+                
+            }    
+        }else if(DATA_TEQ){
+            if(regfile[RD] ^ RN){
+
+            }
+        }else if(DATA_CMP){
+            if(regfile[RD] - CMP == 0){
+                
+            }
+        }else if(DATA_ROR){
             
+        }else if(DATA_ORR){
+            regfile[RD] |= RN;
+        }else if(DATA_MOV){
+            regfile[RD] = RN;
+        }else if(DATA_BIC){
+            regfile[RD] &= !RN;
+        }else if(DATA_MVN){
+            regfile[RD] != RN;
+        }
+    }
+    /* 
+     * Load/Store 
+     */
+    else if(LOAD_STORE){
+        /* Ackknoledge instruction fields */
+        if(LOAD_BIT){
+            /*Load Byte*/
+            if(BYTE_BIT){
+                regfile[RD] = *((unsigned char *)memory + RN);
+            }
+            /*Load Word*/
+            else{
+                /* Load first byte */
+                regfile[RD] = *((unsigned char *)memory + RN);
+                /* Shift bits to the left */
+                regfile[RD] = regfile[RD] << BITS;
+                /* Load second byte */
+                regfile[RD] += *((unsigned char *)memory + (RN + 1));
+            }
+        }else{
+            /*Store Byte*/
+            if(BYTE_BIT){
+                *((unsigned char *)memory + RN) = (unsigned char)regfile[RD];     
+            }else{
+                *((unsigned char *)memory + RN) = (unsigned char)(regfile[RD] >> BITS & 0xFF);
+                *((unsigned char *)memory + (RN +1)) = (unsigned char)(regfile[RD] & 0xFF);
+            }
+        } 
+    /* 
+     * Immediate Operations 
+     */
     }else if(IMMEDIATE){
+        /* Move immediate value into regfile at RD */
         if(MOV){
             regfile[RD] = IMM_VALUE;    
         }else if(CMP){
@@ -504,7 +578,11 @@ void dpu_execute(void *memory){
         }else if(SUB){
             regfile[RD] -= IMM_VALUE;
         }    
+    /* 
+     * Conditonal Branch 
+     */
     }else if(COND_BRANCH){
+        /* Check condition codes */
         if(EQ){
             if(flag_zero){
                 PC += (signed)COND_ADDR;
@@ -540,10 +618,23 @@ void dpu_execute(void *memory){
         }else if(AL){
             PC += (signed)COND_ADDR;
         }
+    /* 
+     * Push / Pull 
+     */
     }else if(PUSH_PULL){
-    
-    }else if(BRANCH){
+               
+    }
+    /* 
+     * Unonditional Branch 
+     */
+    else if(BRANCH){
+        if(LINK_BIT){
 
+        }    
+        PC = OFFSET12;
+    /* 
+     * Stop 
+     */
     }else if(STOP){
         flag_stop = 1;
     }    
@@ -577,8 +668,8 @@ void dpu_instCycle(void * memory){
         cir = IR1;
         dpu_execute(memory);
         flag_ir = 0;
-    }
-     
+    }     
+
     return;
 }
 
