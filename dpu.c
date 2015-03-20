@@ -566,15 +566,59 @@ void dpu_execute(void *memory){
         /* Move immediate value into regfile at RD */
         if(MOV){
             regfile[RD] = IMM_VALUE;    
-        }else if(CMP){
-            if(regfile[RD] == IMM_VALUE){
+            /* Check moved value is 0 */
+            if(IMM_VALUE == 0 ){
                 flag_zero = 1;
-                flag_carry = 1;
+            }else{ 
+                flag_zero = 0; 
+            }
+            /* Check if moved value is below zero */
+            if(IMM_VALUE < 0){
+                flag_sign = 1;
+            }else{ 
+                flag_sign = 0; 
+            }
+        }else if(CMP){
+            /* Test if the values are equal */
+            if((regfile[RD] - IMM_VALUE) == 0){
+                flag_zero = 1;
             }else{
                 flag_zero = 0;
             }
+            /* Test if the value of register RD is less */
+            if((regfile[RD] - IMM_VALUE) < 0){
+                flag_sign = 1;
+            }else{
+                flag_sign = 0;
+            }    
+            /* Test if the value of register Rd is less*/
+            if((regfile[RD] - IMM_VALUE) > 0){
+                flag_carry = 1;
+            }else{
+                flag_carry =0;
+            }    
         }else if(ADD){
             regfile[RD] += IMM_VALUE;
+            /* Test if result after add is below 0 */
+            if(regfile[RD] + IMM_VALUE < 0){
+                flag_sign = 1;
+            }else{
+                flag_sign = 0;
+            }
+            /* Test if result after add is 0 */
+            if(regfile[RD] + IMM_VALUE == 0){
+                flag_zero = 1;
+            }else{
+                flag_zero = 0;
+            }
+            /* Test if result after add is greater than 32 bits */
+            if(regfile[RD] + IMM_VALUE > 0xFFFFFFFF){
+                regfile[RD] = IMM_VALUE - 0x100000000;
+                flag_carry = 1;
+            }else{
+                flag_carry = 0;
+                regfile[RD] += IMM_VALUE;
+            }
         }else if(SUB){
             regfile[RD] -= IMM_VALUE;
         }    
