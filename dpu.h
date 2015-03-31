@@ -6,6 +6,8 @@
  *  dpu.c function prototypes
  **********************************************/
 
+#include <stdint.h>
+
 /*  Sizes */
 #define MEM_SIZE        0x4000
 #define BUFF_SIZE       0x100
@@ -126,20 +128,20 @@
  *  cir - Unofficial hidden register for holding the current instruction. 
  *
  */
-static unsigned long  regfile[RF_SIZE];
-static unsigned long  mar;
-static unsigned long  mbr;
-static unsigned long  ir;
-static unsigned long  alu;
-static unsigned short cir;
+static uint32_t  regfile[RF_SIZE];
+static uint32_t  mar;
+static uint32_t  mbr;
+static uint32_t  ir;
+static uint32_t  alu;
+static uint16_t  cir;
 
 
 /* Flags */
-static unsigned int flag_sign;
-static unsigned int flag_zero;
-static unsigned int flag_carry;
-static unsigned int flag_stop;
-static unsigned int flag_ir;
+static uint8_t flag_sign;
+static uint8_t flag_zero;
+static uint8_t flag_carry;
+static uint8_t flag_stop;
+static uint8_t flag_ir;
 
 
 /* Prototypes */
@@ -171,7 +173,7 @@ void dpu_execute(void * memory);
 
 void dpu_instCycle(void * memory);
 
-void dpu_flags(unsigned long alu);
+void dpu_flags(uint32_t alu);
 
-int iscarry(unsigned long op1, unsigned long op2, unsigned int c);
+int iscarry(uint32_t op1, uint32_t op2, uint8_t c);
 
