@@ -153,7 +153,7 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
         } 
 
         /* Print the offset/block number */
-        printf("%4.4X\t", offset);
+        printf("%04X\t", offset);
         /* Create the line */
         for(i = 0; i < LINE_LENGTH; i++, offset++, count++){
             /* Ensure that the pointer does not go out of bounds */
@@ -167,7 +167,7 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
                 break;
             }      
             line[i] = *((char*)memptr + offset);
-            printf("%2.2X ", line[i]);
+            printf("%02X ", line[i]);
         }
         /* Move to a newline and continue to ASCII representation of the 
          * line dumped.
@@ -257,7 +257,7 @@ int dpu_modify(void * memptr, unsigned int offset){
 
     forever{
         // Print current offset and value
-        printf("%4.4X : %2.2X > ", offset, *((unsigned char*)memptr + offset));
+        printf("%04X : %02X > ", offset, *((unsigned char*)memptr + offset));
         // Get input
         fgets(input, BUFF_SIZE, stdin);
         // Nullify newline element
@@ -319,13 +319,13 @@ int dpu_reg(){
             printf("\n");
         }
         if(i == RF_SP){
-            printf(" SP:%8.8X ", SP);
+            printf(" SP:%08lX ", SP);
         }else if(i == RF_LR){
-            printf(" LR:%8.8X ",  LR);
+            printf(" LR:%08lX ",  LR);
         }else if(i == RF_PC){
-            printf(" PC:%8.8X ",  PC);
+            printf(" PC:%08lX ",  PC);
         }else{    
-            printf("r%2.2d:%8.8X ", i,  regfile[i]);
+            printf("r%02d:%08lX ", i,  regfile[i]);
         }    
     }    
     
@@ -333,7 +333,7 @@ int dpu_reg(){
     printf("\t SZC:%d%d%d", flag_sign, flag_zero, flag_carry);
 
     /* Print non-visible registers */
-    printf("\n   MAR:%8.8X   MBR:%8.8X   IR0:%4.4X   IR1:%4.4X   Stop:%d   IR Flag:%d\n",  mar,  mbr, IR0, IR1, flag_stop, flag_ir);
+    printf("\n   MAR:%08lX   MBR:%08lX   IR0:%04lX   IR1:%04lX   Stop:%01d   IR Flag:%01d\n",  mar,  mbr, IR0, IR1, flag_stop, flag_ir);
 
     return 0;
 }
@@ -447,7 +447,7 @@ void dpu_help(){
 }
 
 
-/**
+/********************************************************
  * Fetch:  Fetch an instruction from memory, at the address
  *         of the program counter.  Memory is 8 bits, and so
  *         4 bytes must be collected into the MBR, starting at the
@@ -457,52 +457,60 @@ void dpu_help(){
  *         to 32 bits read.  The PC is incremented by the size of one
  *         register/instruction after the contents of MBR are stored in
  *         the Instruction Register.
- */         
+ **************************************************************/         
 void dpu_fetch(void * memory){
     unsigned int i;
 
     /* MAR <- PC */
     mar = PC;
     
-    /* MBR <- memory[MAR] */
-    for(i = 0; i < CYCLES; i++){
-        mbr = mbr << BITS;
+    /* MBR <- memory[MAR] */        /* PC <- + 1 instruction */
+    for(i = 0; i < CYCLES; i++, mar++, PC++){
+        mbr = mbr << SHIFT_BYTE;
         /* Add memory at mar to mbr */
-        mbr += *((unsigned char*)memory + (mar + i));
-    }    
+        mbr += *((unsigned char*)memory + mar);
+    }     
 
     /* IR <- MBR */
     ir = mbr;
 
-    /* PC <- PC + 1 instruction */
-    PC += REG_SIZE;
 }
 
 
-/**
+/***************************************************************
  * Execute: Recognize instruction type, acknowledge instruction 
  *          fields, execute instruction based on the instruction fields.
- */
+ ******************************************************************/
 void dpu_execute(void *memory){
-    /* Recognize instruction type: */
+    unsigned int i;
+
+
+    /* Recognize instruction type */
     
+    /*
+     * Reset Stop
+     */
+    flag_stop = 0;
+
     /* 
      * Data Processing 
      */
     if(DATA_PROC){
+        /* Debug */
+        printf("data\n");
         /* Acknowledge Operation field */
         if(DATA_AND){
-            regfile[RD] &= RN;
+            regfile[RD] &= regfile[RN];
         }else if(DATA_EOR){
-            regfile[RD] ^= RN;
+            regfile[RD] ^= regfile[RN];
         }else if(DATA_SUB){
-            regfile[RD] -= RN;
+            regfile[RD] -= regfile[RN];
         }else if(DATA_SXB){
-            regfile[RD] = (signed)RN;
+            regfile[RD] = (signed)regfile[RN];
         }else if(DATA_ADD){
-            regfile[RD] += RN;
+            regfile[RD] += regfile[RN];
         }else if(DATA_ADC){
-            regfile[RD] += RN + flag_carry; 
+            regfile[RD] += regfile[RN] + flag_carry; 
         }else if(DATA_LSR){
             regfile[RD] = regfile[RD] >> RN;
         }else if(DATA_LSL){
@@ -537,95 +545,71 @@ void dpu_execute(void *memory){
     else if(LOAD_STORE){
         /* Ackknoledge instruction fields */
         if(LOAD_BIT){
+            /* MAR <- regfile[RN] */
+            mar = regfile[RN];
+            
             /*Load Byte*/
             if(BYTE_BIT){
-                regfile[RD] = *((unsigned char *)memory + RN);
+                /*mbr <- mem[mar]*/
+                mbr = *((unsigned char *)memory + mar);
+                regfile[RD] = mbr;
             }
-            /*Load Word*/
+            /*Load Double Word*/
             else{
-                /* Load first byte */
-                regfile[RD] = *((unsigned char *)memory + RN);
-                /* Shift bits to the left */
-                regfile[RD] = regfile[RD] << BITS;
-                /* Load second byte */
-                regfile[RD] += *((unsigned char *)memory + (RN + 1));
+                for(i = 0; i < CYCLES; i++, mar++){
+                    mbr << SHIFT_BYTE;
+                    mbr += *((unsigned char*)memory + mar);
+                }
+                regfile[RD] = mbr;
             }
         }else{
             /*Store Byte*/
             if(BYTE_BIT){
-                *((unsigned char *)memory + RN) = (unsigned char)regfile[RD];     
-            }else{
-                *((unsigned char *)memory + RN) = (unsigned char)(regfile[RD] >> BITS & 0xFF);
-                *((unsigned char *)memory + (RN +1)) = (unsigned char)(regfile[RD] & 0xFF);
+                mbr = regfile[RD];
+                *((unsigned char*)memory + mar) = (unsigned char)mbr & BYTE_MASK;
+            }
+            /*Store Double Word*/
+            else{
+                mbr = regfile[RD];
+                *((unsigned char*)memory + mar) = (unsigned char)mbr >> SHIFT_3BYTE & BYTE_MASK;
+                mar++;
+                *((unsigned char*)memory + mar) = (unsigned char)mbr >> SHIFT_2BYTE & BYTE_MASK;
+                mar++;
+                *((unsigned char*)memory + mar) = (unsigned char)mbr >> SHIFT_BYTE & BYTE_MASK;
+                mar++;
+                *((unsigned char*)memory + mar) = (unsigned char)mbr & BYTE_MASK;
             }
         } 
     /* 
      * Immediate Operations 
      */
     }else if(IMMEDIATE){
+
         /* Move immediate value into regfile at RD */
         if(MOV){
             regfile[RD] = IMM_VALUE;    
-            /* Check moved value is 0 */
-            if(IMM_VALUE == 0 ){
-                flag_zero = 1;
-            }else{ 
-                flag_zero = 0; 
-            }
-            /* Check if moved value is below zero */
-            if(IMM_VALUE < 0){
-                flag_sign = 1;
-            }else{ 
-                flag_sign = 0; 
-            }
+            dpu_flags(regfile[RD]);
         }else if(CMP){
-            /* Test if the values are equal */
-            if((regfile[RD] - IMM_VALUE) == 0){
-                flag_zero = 1;
-            }else{
-                flag_zero = 0;
-            }
-            /* Test if the value of register RD is less */
-            if((regfile[RD] - IMM_VALUE) < 0){
-                flag_sign = 1;
-            }else{
-                flag_sign = 0;
-            }    
-            /* Test if the value of register Rd is less*/
-            if((regfile[RD] - IMM_VALUE) > 0){
-                flag_carry = 1;
-            }else{
-                flag_carry =0;
-            }    
+            alu = ~(regfile[RD] + IMM_VALUE) + 1;
+            dpu_flags(alu);
+            flag_carry = iscarry(regfile[RD], ~IMM_VALUE, 0);
         }else if(ADD){
-            regfile[RD] += IMM_VALUE;
-            /* Test if result after add is below 0 */
-            if(regfile[RD] + IMM_VALUE < 0){
-                flag_sign = 1;
-            }else{
-                flag_sign = 0;
-            }
-            /* Test if result after add is 0 */
-            if(regfile[RD] + IMM_VALUE == 0){
-                flag_zero = 1;
-            }else{
-                flag_zero = 0;
-            }
-            /* Test if result after add is greater than 32 bits */
-            if(regfile[RD] + IMM_VALUE > 0xFFFFFFFF){
-                regfile[RD] = IMM_VALUE - 0x100000000;
-                flag_carry = 1;
-            }else{
-                flag_carry = 0;
-                regfile[RD] += IMM_VALUE;
-            }
+            alu = regfile[RD] + IMM_VALUE;
+            dpu_flags(alu);
+            flag_carry = iscarry(regfile[RD], IMM_VALUE, 0);
+            regfile[RD] = alu;
         }else if(SUB){
-            regfile[RD] -= IMM_VALUE;
+            alu = ~(regfile[RD] + IMM_VALUE) + 1;
+            dpu_flags(alu);
+            flag_carry = iscarry(~regfile[RD], ~IMM_VALUE, 1);
+            regfile[RD] = alu;
         }    
     /* 
      * Conditonal Branch 
      */
     }else if(COND_BRANCH){
+        /* debug */
+        printf("cond\n");
         /* Check condition codes */
         if(EQ){
             if(flag_zero){
@@ -666,20 +650,25 @@ void dpu_execute(void *memory){
      * Push / Pull 
      */
     }else if(PUSH_PULL){
-               
+        /* Debug */
+        printf("push \n");
     }
     /* 
      * Unonditional Branch 
      */
     else if(BRANCH){
+        /* Debug */
+        printf("branch \n");
         if(LINK_BIT){
-
+            PC = LR;
         }    
         PC = OFFSET12;
     /* 
      * Stop 
      */
     }else if(STOP){
+        /* Debug */
+        printf("stop\n");
         flag_stop = 1;
     }    
     
@@ -687,9 +676,9 @@ void dpu_execute(void *memory){
 }    
 
 
-/**
+/********************************************************************
  * Instruction Cycle:   
- *      A function cycle consists of a fetch, which provides two 
+ *      An instruction cycle consists of a fetch, which provides two 
  *      instructions, and an execute for each of said instructions.  
  *      An IR flag is uses to determine the which instruction is to be
  *      executed from either 16-bit IR0 or IR1 of the 32-bit 
@@ -698,13 +687,13 @@ void dpu_execute(void *memory){
  *      providing IR0 and IR1 with the new instructions, and the flag is 
  *      then set high.  
  *
- */
+ ***********************************************************************/
 void dpu_instCycle(void * memory){
     /* Determine which IR to use via IR Active flag */
     if(flag_ir == 0){
         /* Fetch new set of instructions */
         dpu_fetch(memory);
-        /*   */
+        /* Current instruction is now IR0 */
         cir = IR0;
         dpu_execute(memory);
         flag_ir = 1;
@@ -715,6 +704,33 @@ void dpu_instCycle(void * memory){
     }     
 
     return;
+}
+
+/****************************************************************
+ * dpu_flags() - This routine checks for flags zero and sign, 
+ *              regarding the result in the ALU register.
+ *************************************************************/          
+void dpu_flags(unsigned long alu){        
+    if(alu == 0){
+        flag_zero = 1;
+    }else{
+        flag_zero = 0;
+    }    
+    
+    flag_sign = alu & MSB_MASK;
+
+    return;
+}
+
+
+/**********************************************************
+ *   iscarry()- determine if carry is generated by addition: op1+op2+C
+ *     C can only have value of 1 or 0.
+ ************************************************************/
+int iscarry(unsigned long op1,unsigned long op2, unsigned int c){
+    if ((op2== MAX32)&&(c==1)) 
+        return(1); // special case where op2 is at MAX32
+    return((op1 > (MAX32 - op2 - c))?1:0);
 }
 
 

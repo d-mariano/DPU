@@ -13,7 +13,7 @@
 #define REG_SIZE_BITS   0x20
 #define REG_SIZE        0x4
 #define RF_SIZE         0x10
-
+#define MAX32           0xFFFFFFFF
 
 /* Display 
  *  
@@ -39,29 +39,32 @@
 #define IR1 ir & 0xFFFF
 
 
-/* Instruction Fetch 
+/* Bit Shifting and Byte Masks
  *
  *  CYCLES - Amount of cycles needed to pack bits/bytes from 8-bit
  *           memory into a 32-bit register.
  *
- *    BITS - Amount of bits to shift before packing the next byte 
- *           taken from memory and put into the register.
+ *   SHIFT_BYTE - 8 bits (1 byte)
+ *  SHIFT_2BYTE - 16 bits (2 bytes)
  *           
- *
+ *          MSB - Mask for most significant bit of 32-bits
  */
 #define CYCLES  (REG_SIZE / BYTE_SIZE)
-#define BITS    8
-
+#define SHIFT_3BYTE 24
+#define SHIFT_2BYTE 16
+#define SHIFT_BYTE  8
+#define MSB_MASK    0x80000000
+#define BYTE_MASK   0xFF
 
 /* Instruction Formats  */
 #define FORMAT      (unsigned)cir >> 13
-#define DATA_PROC   FORMAT & 0x0
-#define LOAD_STORE  FORMAT & 0x1
-#define IMMEDIATE   FORMAT & 0x2 | 0x3
-#define COND_BRANCH FORMAT & 0x4
-#define PUSH_PULL   FORMAT & 0x5
-#define BRANCH      FORMAT & 0x6
-#define STOP        0xE000
+#define DATA_PROC   FORMAT == 0x0
+#define LOAD_STORE  FORMAT == 0x1
+#define IMMEDIATE   FORMAT == 0x2 | FORMAT == 0x3
+#define COND_BRANCH FORMAT == 0x4
+#define PUSH_PULL   FORMAT == 0x5
+#define BRANCH      FORMAT == 0x6
+#define STOP        cir == 0xE000
 
 /* Instruction Fields */
 #define OPERATION   ((cir >> 8) & 0xF)
@@ -80,39 +83,39 @@
 #define OFFSET12    cir & 0xFFF
 
 /* Data Processing OpCodes */
-#define DATA_AND 0x0 & OPERATION
-#define DATA_EOR 0x1 & OPERATION
-#define DATA_SUB 0x2 & OPERATION
-#define DATA_SXB 0x3 & OPERATION
-#define DATA_ADD 0x4 & OPERATION
-#define DATA_ADC 0x5 & OPERATION
-#define DATA_LSR 0x6 & OPERATION
-#define DATA_LSL 0x7 & OPERATION
-#define DATA_TST 0x8 & OPERATION
-#define DATA_TEQ 0x9 & OPERATION 
-#define DATA_CMP 0xA & OPERATION 
-#define DATA_ROR 0xB & OPERATION
-#define DATA_ORR 0xC & OPERATION 
-#define DATA_MOV 0xD & OPERATION
-#define DATA_BIC 0xE & OPERATION
-#define DATA_MVN 0xF & OPERATION
+#define DATA_AND 0x0 == OPERATION
+#define DATA_EOR 0x1 == OPERATION
+#define DATA_SUB 0x2 == OPERATION
+#define DATA_SXB 0x3 == OPERATION
+#define DATA_ADD 0x4 == OPERATION
+#define DATA_ADC 0x5 == OPERATION
+#define DATA_LSR 0x6 == OPERATION
+#define DATA_LSL 0x7 == OPERATION
+#define DATA_TST 0x8 == OPERATION
+#define DATA_TEQ 0x9 == OPERATION 
+#define DATA_CMP 0xA == OPERATION 
+#define DATA_ROR 0xB == OPERATION
+#define DATA_ORR 0xC == OPERATION 
+#define DATA_MOV 0xD == OPERATION
+#define DATA_BIC 0xE == OPERATION
+#define DATA_MVN 0xF == OPERATION
 
 /* Immediate OpCodes */
-#define MOV 0x0 & OPCODE
-#define CMP 0x1 & OPCODE
-#define ADD 0x2 & OPCODE
-#define SUB 0x3 & OPCODE
+#define MOV 0x0 == OPCODE
+#define CMP 0x1 == OPCODE
+#define ADD 0x2 == OPCODE
+#define SUB 0x3 == OPCODE
 
 /* Branch Condition Codes */
-#define EQ 0x0 & CONDITION
-#define NE 0x1 & CONDITION
-#define CS 0x2 & CONDITION
-#define CC 0x3 & CONDITION
-#define MI 0x4 & CONDITION 
-#define PL 0x5 & CONDITION
-#define HI 0x8 & CONDITION
-#define LS 0x9 & CONDITION
-#define AL 0xE & CONDITION
+#define EQ 0x0 == CONDITION
+#define NE 0x1 == CONDITION
+#define CS 0x2 == CONDITION
+#define CC 0x3 == CONDITION
+#define MI 0x4 == CONDITION 
+#define PL 0x5 == CONDITION
+#define HI 0x8 == CONDITION
+#define LS 0x9 == CONDITION
+#define AL 0xE == CONDITION
 
 /* Forever loop */
 #define forever for(;;)
@@ -127,15 +130,16 @@ static unsigned long  regfile[RF_SIZE];
 static unsigned long  mar;
 static unsigned long  mbr;
 static unsigned long  ir;
+static unsigned long  alu;
 static unsigned short cir;
 
 
 /* Flags */
-static unsigned char flag_sign;
-static unsigned char flag_zero;
-static unsigned char flag_carry;
-static unsigned char flag_stop;
-static unsigned char flag_ir;
+static unsigned int flag_sign;
+static unsigned int flag_zero;
+static unsigned int flag_carry;
+static unsigned int flag_stop;
+static unsigned int flag_ir;
 
 
 /* Prototypes */
@@ -166,4 +170,8 @@ void dpu_fetch(void * memory);
 void dpu_execute(void * memory);
 
 void dpu_instCycle(void * memory);
+
+void dpu_flags(unsigned long alu);
+
+int iscarry(unsigned long op1, unsigned long op2, unsigned int c);
 
