@@ -482,59 +482,81 @@ void dpu_fetch(void * memory){
  *          Instruction field values are determined in the header.
  ******************************************************************/
 void dpu_execute(void *memory){
-    unsigned int i;
-
+    unsigned int i, temp;
 
     /* Recognize instruction type */
     
     /* 
      * Data Processing 
-     * TODO Implement all Data Processing
      */
     if(DATA_PROC){
-        /* Debug */
-        printf("data\n");
         /* Acknowledge Operation field */
         if(DATA_AND){
             alu = regfile[RD] & regfile[RN];
+            dpu_flags(alu);
+            regfile[RD] = alu;
         }else if(DATA_EOR){
             alu = regfile[RD] ^ regfile[RN];
+            dpu_flags(alu);
+            regfile[RD] = alu;
         }else if(DATA_SUB){
             alu = regfile[RD] + ~regfile[RN] + 1;
+            dpu_flags(alu);
+            flag_carry = iscarry(regfile[RD], ~regfile[RN], 1);
+            regfile[RD] = alu;
         }else if(DATA_SXB){
-            regfile[RD] = (signed)regfile[RN];
+            alu = (signed)regfile[RN];
+            dpu_flags(alu);
+            regfile[RD] = alu;
         }else if(DATA_ADD){
             alu = regfile[RD] + regfile[RN];
             dpu_flags(alu);
+            flag_carry = iscarry(regfile[RD], ~regfile[RN], 0);
+            regfile[RD] = alu;
         }else if(DATA_ADC){
             alu = regfile[RD] + regfile[RN] + flag_carry; 
             dpu_flags(alu);
             flag_carry = iscarry(regfile[RD], regfile[RN], flag_carry);
+            regfile[RD] = alu;
         }else if(DATA_LSR){
-            regfile[RD] = regfile[RD] >> RN;
-        }else if(DATA_LSL){
-            regfile[RD] = regfile[RD] << RN;
-        }else if(DATA_TST){
-            if(regfile[RD] & RN){ 
-                
-            }    
-        }else if(DATA_TEQ){
-            if(regfile[RD] ^ regfile[RN]){
-
-            }
-        }else if(DATA_CMP){
-            alu = ~(regfile[RD] + regfile[RN]) +1;
+            alu = regfile[RD] >> regfile[RN];
             dpu_flags(alu);
+            /* Check for carry */
+            regfile[RD] = alu;
+        }else if(DATA_LSL){
+            alu = regfile[RD] << regfile[RN];
+            dpu_flags(alu);
+            /* Check for carry */
+            regfile[RD] = alu;
+        }else if(DATA_TST){
+            alu = regfile[RD] & regfile[RN];
+            dpu_flags(alu);
+        }else if(DATA_TEQ){
+            alu = regfile[RD] ^ regfile[RN];
+            dpu_flags(alu);
+        }else if(DATA_CMP){
+            alu = regfile[RD] + ~regfile[RN] + 1;
+            dpu_flags(alu);
+            flag_carry = iscarry(regfile[RD], ~regfile[RN], 1);
         }else if(DATA_ROR){
-            
+            for(i = 0; i < regfile[RN]; i++){
+                
+            }
         }else if(DATA_ORR){
-            regfile[RD] |= regfile[RN];
+            alu = regfile[RD] | regfile[RN];
+            dpu_flags(alu);
+            regfile[RD] = alu;
         }else if(DATA_MOV){
             regfile[RD] = regfile[RN];
+            dpu_flags(regfile[RD]);
         }else if(DATA_BIC){
-            regfile[RD] &= !regfile[RN];
+            alu = regfile[RD] & !regfile[RN];
+            dpu_flags(alu);
+            regfile[RD] = alu;
         }else if(DATA_MVN){
-            regfile[RD] != regfile[RN];
+            alu = !regfile[RN];
+            dpu_flags(alu);
+            regfile[RD] = alu;
         }
     }
     /* 
@@ -582,7 +604,6 @@ void dpu_execute(void *memory){
      * Immediate Operations 
      */
     }else if(IMMEDIATE){
-
         /* Move immediate value into regfile at RD */
         if(MOV){
             regfile[RD] = IMM_VALUE;    
@@ -603,20 +624,14 @@ void dpu_execute(void *memory){
             regfile[RD] = alu;
         }    
     /* 
-     * TODO Conditonal Branch 
+     * Conditonal Branch 
      */
     }else if(COND_BRANCH){
-        /* debug */
-        printf("cond\n");
-        /* Check condition codes */
+        /* Check condition codes and flags */
         if(dpu_chkbra()){
-            if(COND_ADDR & MSB_MASK){
-                alu = PC + COND_ADDR + 1;
-                PC = alu;
-            }else{
-                alu = PC + COND_ADDR;
-                PC = alu;
-            }
+            /* Add relative address as a signed 8-bit */
+            alu = PC + (int8_t)COND_ADDR;
+            PC = alu;
         }
         
     /* 
@@ -630,8 +645,6 @@ void dpu_execute(void *memory){
      * Unonditional Branch 
      */
     else if(BRANCH){
-        /* Debug */
-        printf("branch \n");
         if(LINK_BIT){
             LR = PC;
         }    
@@ -640,8 +653,6 @@ void dpu_execute(void *memory){
      * Stop 
      */
     }else if(STOP){
-        /* Debug */
-        printf("stop\n");
         flag_stop = 1;
     }    
     
@@ -737,7 +748,7 @@ void dpu_flags(uint32_t alu){
         flag_zero = 0;
     }    
     
-    flag_sign = alu & MSB_MASK;
+    flag_sign = alu & MSB32_MASK;
 
     return;
 }
