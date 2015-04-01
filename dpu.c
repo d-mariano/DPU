@@ -74,13 +74,11 @@ int dpu_start(){
                 dpu_dump(memory, offset, length);
                 break;
             case 'g':
-                /*
-                 * while(!flag_stop){
-                 *     dpu_instCycle(memory);
-                 * }
-                 */
-
-                printf("\"go\" not yet implemented.\n");
+                
+                 while(!flag_stop){
+                    dpu_instCycle(memory);
+                 }
+                 
                 break;
             case 'l':
                 bytes = dpu_LoadFile(memory, MEM_SIZE);
@@ -480,7 +478,8 @@ void dpu_fetch(void * memory){
 
 /***************************************************************
  * Execute: Recognize instruction type, acknowledge instruction 
- *          fields, execute instruction based on the instruction fields.
+ *          fields, execute instruction based on instruction field values.
+ *          Instruction field values are determined in the header.
  ******************************************************************/
 void dpu_execute(void *memory){
     unsigned int i;
@@ -490,23 +489,27 @@ void dpu_execute(void *memory){
     
     /* 
      * Data Processing 
+     * TODO Implement all Data Processing
      */
     if(DATA_PROC){
         /* Debug */
         printf("data\n");
         /* Acknowledge Operation field */
         if(DATA_AND){
-            regfile[RD] &= regfile[RN];
+            alu = regfile[RD] & regfile[RN];
         }else if(DATA_EOR){
-            regfile[RD] ^= regfile[RN];
+            alu = regfile[RD] ^ regfile[RN];
         }else if(DATA_SUB){
-            regfile[RD] -= regfile[RN];
+            alu = regfile[RD] + ~regfile[RN] + 1;
         }else if(DATA_SXB){
             regfile[RD] = (signed)regfile[RN];
         }else if(DATA_ADD){
-            regfile[RD] += regfile[RN];
+            alu = regfile[RD] + regfile[RN];
+            dpu_flags(alu);
         }else if(DATA_ADC){
-            regfile[RD] += regfile[RN] + flag_carry; 
+            alu = regfile[RD] + regfile[RN] + flag_carry; 
+            dpu_flags(alu);
+            flag_carry = iscarry(regfile[RD], regfile[RN], flag_carry);
         }else if(DATA_LSR){
             regfile[RD] = regfile[RD] >> RN;
         }else if(DATA_LSL){
@@ -520,9 +523,8 @@ void dpu_execute(void *memory){
 
             }
         }else if(DATA_CMP){
-            if(regfile[RD] - regfile[RN] == 0){
-                
-            }
+            alu = ~(regfile[RD] + regfile[RN]) +1;
+            dpu_flags(alu);
         }else if(DATA_ROR){
             
         }else if(DATA_ORR){
@@ -595,55 +597,30 @@ void dpu_execute(void *memory){
             flag_carry = iscarry(regfile[RD], IMM_VALUE, 0);
             regfile[RD] = alu;
         }else if(SUB){
-            alu = ~(regfile[RD] + IMM_VALUE) + 1;
+            alu = regfile[RD] + ~IMM_VALUE + 1;
             dpu_flags(alu);
-            flag_carry = iscarry(~regfile[RD], ~IMM_VALUE, 1);
+            flag_carry = iscarry(regfile[RD], ~IMM_VALUE, 1);
             regfile[RD] = alu;
         }    
     /* 
-     * Conditonal Branch 
+     * TODO Conditonal Branch 
      */
     }else if(COND_BRANCH){
         /* debug */
         printf("cond\n");
         /* Check condition codes */
-        if(EQ){
-            if(flag_zero){
-                PC += (signed)COND_ADDR;
-            }    
-        }else if(NE){
-            if(!flag_zero){
-                PC += (signed)COND_ADDR;
+        if(dpu_chkbra()){
+            if(COND_ADDR & MSB_MASK){
+                alu = PC + COND_ADDR + 1;
+                PC = alu;
+            }else{
+                alu = PC + COND_ADDR;
+                PC = alu;
             }
-        }else if(CS){
-            if(flag_carry){
-                PC += (signed)COND_ADDR;
-            }
-        }else if(CC){
-            if(!flag_carry){
-                PC += (signed)COND_ADDR;
-            }
-        }else if(MI){
-            if(flag_sign){
-                PC += (signed)COND_ADDR;      
-            }    
-        }else if(PL){
-            if(!flag_sign){
-                PC += (signed)COND_ADDR;
-            }
-        }else if(HI){
-            if(flag_carry && !flag_sign){
-                PC += (signed)COND_ADDR;   
-            }
-        }else if(LS){
-            if(!flag_carry && flag_sign){
-                PC += (signed)COND_ADDR;
-            }
-        }else if(AL){
-            PC += (signed)COND_ADDR;
         }
+        
     /* 
-     * Push / Pull 
+     * TODO Push / Pull 
      */
     }else if(PUSH_PULL){
         /* Debug */
@@ -656,7 +633,7 @@ void dpu_execute(void *memory){
         /* Debug */
         printf("branch \n");
         if(LINK_BIT){
-            PC = LR;
+            LR = PC;
         }    
         PC = OFFSET12;
     /* 
@@ -700,6 +677,52 @@ void dpu_instCycle(void * memory){
     }     
 
     return;
+}
+
+/*************************************************************
+ *  dpu_chkbra() - Check condition code and flags, if a branch
+ *                 is to be made, then return 1; else 0.
+ *  
+ *  
+ ********************************************************/
+int dpu_chkbra(){
+    if(EQ){
+        if(flag_zero){
+            return 1;
+        }    
+    }else if(NE){
+        if(!flag_zero){
+            return 1;
+        }
+    }else if(CS){
+        if(flag_carry){
+            return 1;
+        }
+    }else if(CC){
+        if(!flag_carry){
+            return 1;
+        }
+    }else if(MI){
+        if(flag_sign){
+            return 1;      
+        }    
+    }else if(PL){
+        if(!flag_sign){
+            return 1;
+        }
+    }else if(HI){
+        if(flag_carry && !flag_zero){
+            return 1;   
+        }
+    }else if(LS){
+        if(!flag_carry || flag_zero){
+            return 1;
+        }
+    }else if(AL){
+        return 1;
+    }
+    
+    return 0;
 }
 
 
