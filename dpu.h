@@ -49,13 +49,14 @@
  *   SHIFT_BYTE - 8 bits (1 byte)
  *  SHIFT_2BYTE - 16 bits (2 bytes)
  *           
- *          MSB - Mask for most significant bit of 32-bits
+ *   MSB_MASK32 - Mask for most significant bit of 32-bits
  */
 #define CYCLES  (REG_SIZE / BYTE_SIZE)
 #define SHIFT_3BYTE 24
 #define SHIFT_2BYTE 16
 #define SHIFT_BYTE  8
-#define MSB_MASK    0x80000000
+#define MSB32_MASK  0x80000000
+#define MSB_BYTE    0x80
 #define BYTE_MASK   0xFF
 
 /* Instruction Formats  */
