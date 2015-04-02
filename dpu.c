@@ -219,7 +219,8 @@ int dpu_LoadFile(void * memory, unsigned int max){
     nbytes = 0;
 
     // Write file to memory
-    while(fgets(buff, BUFF_SIZE, file)){
+    while(!feof(file) > 0 && !ferror(file) > 0){
+        fgets(buff, BUFF_SIZE, file);
         // Check if memory has enough space for the buffer
         if(max - strlen(memory) >= strlen(buff)){
             strcat(memory, buff);
@@ -580,7 +581,7 @@ void dpu_execute(void *memory){
             else{
                 printf("dw\n");
                 for(i = 0; i < CYCLES; i++, mar++){
-                    mbr << SHIFT_BYTE;
+                    mbr = mbr << SHIFT_BYTE;
                     mbr += *((unsigned char*)memory + mar);
                 }
                 regfile[RD] = mbr;
@@ -594,9 +595,9 @@ void dpu_execute(void *memory){
             /*Store Double Word*/
             else{
                 mbr = regfile[RD];
-                *((unsigned char*)memory + mar++) = (unsigned char)mbr >> SHIFT_3BYTE & BYTE_MASK;
-                *((unsigned char*)memory + mar++) = (unsigned char)mbr >> SHIFT_2BYTE & BYTE_MASK;
-                *((unsigned char*)memory + mar++) = (unsigned char)mbr >> SHIFT_BYTE & BYTE_MASK;
+                *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_3BYTE & BYTE_MASK);
+                *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_2BYTE & BYTE_MASK);
+                *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_BYTE & BYTE_MASK);
                 *((unsigned char*)memory + mar) = (unsigned char)mbr & BYTE_MASK;
             }
         } 
