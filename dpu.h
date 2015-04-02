@@ -11,7 +11,7 @@
 /*  Sizes */
 #define MEM_SIZE        0x4000
 #define BUFF_SIZE       0x100
-#define BYTE_SIZE       ((int)sizeof(char))
+#define BYTE_SIZE       0x1
 #define REG_SIZE_BITS   0x20
 #define REG_SIZE        0x4
 #define RF_SIZE         0x10
