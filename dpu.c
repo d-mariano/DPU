@@ -211,7 +211,7 @@ int dpu_LoadFile(void * memory, unsigned int max){
 
     /* Open the file */
     if((file = fopen(filename, "rb")) == NULL){
-        sprintf(error, "load: %s", filename);
+        sprintf(error, "load: fopen: %s", filename);
         perror(error);
         return -1;
     }
@@ -220,14 +220,14 @@ int dpu_LoadFile(void * memory, unsigned int max){
     
     /* Discover file size */
     if(fseek(file, 0, SEEK_END) == -1){
-        perror("loadFile: fseek");
+        perror("load: fseek");
         fclose(file);
         return -1;
     }
     
     /* Record file size as file position inidcator of ftell */
     if((fsize = ftell(file)) == -1){
-        perror("loadFile: ftell");
+        perror("load: ftell");
         fclose(file);
         return -1;
     }
@@ -245,7 +245,7 @@ int dpu_LoadFile(void * memory, unsigned int max){
     nbytes = (int)fread(memory, BYTE_SIZE, (size_t)fsize, file);
     
     if(ferror(file)){
-        perror("loadFile: fread");
+        perror("load: fread");
         fclose(file);
         return -1;
     }
