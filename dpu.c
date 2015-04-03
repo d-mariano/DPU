@@ -193,21 +193,23 @@ int dpu_dump(void * memptr, unsigned int offset, unsigned int length){
 int dpu_LoadFile(void * memory, unsigned int max){
     FILE* file;
     int nbytes;
-    unsigned char buff[BUFF_SIZE];
     unsigned char filename[BUFF_SIZE];
+    unsigned char buff[BUFF_SIZE];
     unsigned char error[BUFF_SIZE];
     unsigned char flush[BUFF_SIZE];
+    unsigned long fsize;
 
-    // Prompt for filename
+
+    /* Prompt for filename */
     printf("\nEnter a filename: ");
     
-    // Obtain filename
+    /* Obtain filename */
     fgets(filename, BUFF_SIZE, stdin);
     
-    // Nullify the last byte
+    /* Nullify the last byte */
     filename[strlen(filename)-1] = '\0';
 
-    // Open the file
+    /* Open the file */
     if((file = fopen(filename, "rb")) == NULL){
         sprintf(error, "load: %s", filename);
         perror(error);
@@ -215,31 +217,42 @@ int dpu_LoadFile(void * memory, unsigned int max){
     }
 
     printf("Loading %s to memory.\n", filename);
-    // Set number of bytes loaded
-    nbytes = 0;
+    
+    /* Discover file size */
+    if(fseek(file, 0, SEEK_END) == -1){
+        perror("loadFile: fseek");
+        fclose(file);
+        return -1;
+    }
+    
+    /* Record file size as file position inidcator of ftell */
+    if((fsize = ftell(file)) == -1){
+        perror("loadFile: ftell");
+        fclose(file);
+        return -1;
+    }
+    
+    /* Set file position to beginning of file */
+    rewind(file);
 
-    // Write file to memory
-    while(!feof(file) > 0 && !ferror(file) > 0){
-        fgets(buff, BUFF_SIZE, file);
-        // Check if memory has enough space for the buffer
-        if(max - strlen(memory) >= strlen(buff)){
-            strcat(memory, buff);
-            nbytes += strlen(buff);
-        }else{
-            buff[(max - strlen(memory))] = '\0'; 
-            // Load exact amount of bytes possible 
-            strcat(memory,buff);
-            nbytes += strlen(buff);
-            // Anounce that the file has been truncated
-            printf("Input from file has been truncated to fit into memory.\n");
-            fclose(file);
-            return nbytes;
-        }
+    /* Truncate file if it cannot fit in memory */
+    if(max < fsize){
+        fsize = max;
+        printf("Data from file has been truncated to fit into memory.\n");
+    }
+
+    /* Read the file into memory */
+    nbytes = (int)fread(memory, BYTE_SIZE, (size_t)fsize, file);
+    
+    if(ferror(file)){
+        perror("loadFile: fread");
+        fclose(file);
+        return -1;
     }
 
     fclose(file);
     
-    return nbytes;
+    return (int)nbytes;
 }
 
 
@@ -369,8 +382,6 @@ void dpu_WriteFile(void * memory){
     
     /** Check if number of bytes specified is greater than memory, 
      *  less than 0, or 0.  
-     *  In gcc, non-numbers equate to 0. 
-     *  In c++ (Visual Studio), non-numbers are less than 0.
      */
     if(nbytes > MEM_SIZE){
         printf("File not written.  Cannot write more bytes than in memory.\n");
