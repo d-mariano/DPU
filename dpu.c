@@ -539,7 +539,7 @@ void dpu_execute(void *memory){
             dpu_flags(alu);
             regfile[RD] = alu;
         }else if(DATA_LSL){
-            for(i = 0; i < regfile[RN]){
+            for(i = 0; i < regfile[RN]; i++){
                 flag_carry = regfile[RN] & LSB_MASK;
                 alu = regfile[RD] << 1;
             }
