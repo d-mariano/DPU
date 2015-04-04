@@ -531,14 +531,19 @@ void dpu_execute(void *memory){
             flag_carry = iscarry(regfile[RD], regfile[RN], flag_carry);
             regfile[RD] = alu;
         }else if(DATA_LSR){
-            alu = regfile[RD] >> regfile[RN];
+            for(i = 0; i < regfile[RN]; i++){
+                flag_carry = regfile[RN] & LSB_MASK;
+                alu = regfile[RD] >> 1;
+            }
+            
             dpu_flags(alu);
-            /* Check for carry */
             regfile[RD] = alu;
         }else if(DATA_LSL){
-            alu = regfile[RD] << regfile[RN];
+            for(i = 0; i < regfile[RN]){
+                flag_carry = regfile[RN] & LSB_MASK;
+                alu = regfile[RD] << 1;
+            }
             dpu_flags(alu);
-            /* Check for carry */
             regfile[RD] = alu;
         }else if(DATA_TST){
             alu = regfile[RD] & regfile[RN];
@@ -552,8 +557,13 @@ void dpu_execute(void *memory){
             flag_carry = iscarry(regfile[RD], ~regfile[RN], 1);
         }else if(DATA_ROR){
             for(i = 0; i < regfile[RN]; i++){
-                
+                temp = regfile[RD] & LSB_MASK;
+                flag_carry = temp;
+                alu = regfile[RD] >> 1;
+                alu += temp * MSB32_MASK;
             }
+            dpu_flags(alu);
+            regfile[RD] = alu;
         }else if(DATA_ORR){
             alu = regfile[RD] | regfile[RN];
             dpu_flags(alu);
