@@ -517,7 +517,10 @@ void dpu_execute(void *memory){
             flag_carry = iscarry(regfile[RD], ~regfile[RN], 1);
             regfile[RD] = alu;
         }else if(DATA_SXB){
-            alu = (signed)regfile[RN];
+            alu = regfile[RN];
+            if((alu & MSB8_MASK) == 1){
+                alu += SIGN32_EXT;
+            }
             dpu_flags(alu);
             regfile[RD] = alu;
         }else if(DATA_ADD){
@@ -535,7 +538,6 @@ void dpu_execute(void *memory){
                 flag_carry = regfile[RN] & LSB_MASK;
                 alu = regfile[RD] >> 1;
             }
-            
             dpu_flags(alu);
             regfile[RD] = alu;
         }else if(DATA_LSL){
@@ -560,6 +562,7 @@ void dpu_execute(void *memory){
                 temp = regfile[RD] & LSB_MASK;
                 flag_carry = temp;
                 alu = regfile[RD] >> 1;
+                /* Set the MSB of the alu to the value shifted left */
                 alu += temp * MSB32_MASK;
             }
             dpu_flags(alu);
@@ -608,14 +611,14 @@ void dpu_execute(void *memory){
                 regfile[RD] = mbr;
             }
         }else{
+            /* MBR <- regfile[RD] */
+            mbr = regfile[RD];
             /*Store Byte*/
             if(BYTE_BIT){
-                mbr = regfile[RD];
                 *((unsigned char*)memory + mar) = (unsigned char)mbr & BYTE_MASK;
             }
             /*Store Double Word*/
             else{
-                mbr = regfile[RD];
                 *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_3BYTE & BYTE_MASK);
                 *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_2BYTE & BYTE_MASK);
                 *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_BYTE & BYTE_MASK);
