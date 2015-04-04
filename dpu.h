@@ -41,7 +41,7 @@
 #define IR1 ir & 0xFFFF
 
 
-/* Bit Shifting and Byte Masks
+/* Bit Shifting, Byte Masks, Extensions
  *
  *  CYCLES - Amount of cycles needed to pack bits/bytes from 8-bit
  *           memory into a 32-bit register.
@@ -60,6 +60,7 @@
 #define MSB8_MASK   0x80
 #define LSB_MASK    0x1
 #define BYTE_MASK   0xFF
+#define SIGN32_EXT  0xFFFFFF00
 
 /* Instruction Formats  */
 #define FORMAT      (unsigned)cir >> 13
