@@ -55,8 +55,10 @@
 #define SHIFT_3BYTE 24
 #define SHIFT_2BYTE 16
 #define SHIFT_BYTE  8
+#define SHIFT_BIT   1
 #define MSB32_MASK  0x80000000
-#define MSB_BYTE    0x80
+#define MSB8_MASK   0x80
+#define LSB_MASK    0x1
 #define BYTE_MASK   0xFF
 
 /* Instruction Formats  */
