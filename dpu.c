@@ -519,7 +519,7 @@ void dpu_execute(void *memory){
         }else if(DATA_SXB){
             alu = regfile[RN];
             if((alu & MSB8_MASK) == 1){
-                alu += SIGN32_EXT;
+                alu += SEX8TO32;
             }
             dpu_flags(alu);
             regfile[RD] = alu;
