@@ -563,7 +563,9 @@ void dpu_execute(void *memory){
                 flag_carry = temp;
                 alu = regfile[RD] >> 1;
                 /* Set the MSB of the alu to the value shifted left */
-                alu += temp * MSB32_MASK;
+                if(flag_carry){
+                    alu += MSB32_MASK;
+                }
             }
             dpu_flags(alu);
             regfile[RD] = alu;
@@ -575,11 +577,11 @@ void dpu_execute(void *memory){
             regfile[RD] = regfile[RN];
             dpu_flags(regfile[RD]);
         }else if(DATA_BIC){
-            alu = regfile[RD] & !regfile[RN];
+            alu = regfile[RD] & ~regfile[RN];
             dpu_flags(alu);
             regfile[RD] = alu;
         }else if(DATA_MVN){
-            alu = !regfile[RN];
+            alu = ~regfile[RN];
             dpu_flags(alu);
             regfile[RD] = alu;
         }
