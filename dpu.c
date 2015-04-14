@@ -564,7 +564,7 @@ void dpu_execute(void *memory){
                 alu = regfile[RD] >> 1;
                 /* Set the MSB of the alu to the value shifted left */
                 if(flag_carry){
-                    alu += MSB32_MASK;
+                    alu |= MSB32_MASK;
                 }
             }
             dpu_flags(alu);
