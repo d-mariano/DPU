@@ -35,6 +35,9 @@
 #define LR      regfile[RF_LR]
 #define PC      regfile[RF_PC]
 
+/* Stack Pointer Definitions */
+#define SP_DEC  SP = SP + ~1 + 1
+#define SP_MASK 0x3FFF
 
 /* Instruction Registers */
 #define IR0 (unsigned)ir >> 16 
@@ -67,7 +70,6 @@
 #define BYTE_MASK   0xFF
 #define SEX8TO32    0xFFFFFF00
 #define MSBTOLSB    31
-#define SP_MASK     0x3FFF
 
 /* Instruction Formats  */
 #define FORMAT      (unsigned)cir >> 13
@@ -89,8 +91,8 @@
 #define COND_ADDR   cir & 0xFF
 #define LOAD_BIT    ((cir >> 11) & 0x1)
 #define BYTE_BIT    ((cir >> 10) & 0x1)
-#define HIGH_LOW    ((cir >> 10) & 0x1)
-#define R           ((cir >> 8) & 0x1)
+#define HIGH_BIT    ((cir >> 10) & 0x1)
+#define R_BIT       ((cir >> 8) & 0x1)
 #define REG_LIST    cir & 0xFF
 #define LINK_BIT    ((cir >> 12) & 0x1)
 #define OFFSET12    cir & 0xFFF
@@ -129,6 +131,19 @@
 #define HI 0x8 == CONDITION
 #define LS 0x9 == CONDITION
 #define AL 0xE == CONDITION
+
+/* PUSH/PULL Definitions */
+#define HI_REG 0x8
+#define LO_REG 0x7
+
+#define R0  0x1
+#define R1  0x2
+#define R2  0x4
+#define R3  0x8
+#define R4  0x10
+#define R5  0x20
+#define R6  0x40
+#define R7  0x80
 
 /* Forever loop */
 #define forever for(;;)
