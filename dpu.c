@@ -704,12 +704,28 @@ void dpu_execute(void * memory){
         }
         
     /* 
-     * TODO Push / Pull 
+     * TODO PUSH / PULL
      */
     }else if(PUSH_PULL){
-        /* Debug */
-        printf("push \n");
-        
+        /* PULL */
+        if(LOAD_BIT){
+            /* High Registers */
+            if(HIGH_BIT){
+                for(i =
+            }
+            /* Low Registers */
+            else{
+
+            }
+        }
+        /* PUSH */
+        else{
+            if(HIGH_BIT){
+
+            }else{
+
+            }
+        }
     }
     /* 
      * Unonditional Branch 
