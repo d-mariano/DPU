@@ -458,6 +458,36 @@ void dpu_help(){
 }
 
 
+/********************************************************************
+ * Instruction Cycle:   
+ *      An instruction cycle consists of a fetch, which provides two 
+ *      instructions, and an execute for each of said instructions.  
+ *      An IR flag is uses to determine the which instruction is to be
+ *      executed from either 16-bit IR0 or IR1 of the 32-bit 
+ *      Instruction Register.  If the flag is high, IR1 will be executed,
+ *      then the flag will be set low.  If the flag is low, a fetch is made,
+ *      providing IR0 and IR1 with the new instructions, and the flag is 
+ *      then set high.  
+ *
+ ***********************************************************************/
+void dpu_instCycle(void * memory){
+    /* Determine which IR to use via IR Active flag */
+    if(flag_ir == 0){
+        /* Fetch new set of instructions */
+        dpu_fetch(memory);
+        /* Current instruction is now IR0 */
+        cir = IR0;
+        dpu_execute(memory);
+        flag_ir = 1;
+    }else{
+        cir = IR1;
+        dpu_execute(memory);
+        flag_ir = 0;
+    }     
+
+}
+
+
 /********************************************************
  * Fetch:  Fetch an instruction from memory, at the address
  *         of the program counter.  Memory is 8 bits, and so
@@ -470,31 +500,56 @@ void dpu_help(){
  *         the Instruction Register.
  **************************************************************/         
 void dpu_fetch(void * memory){
-    unsigned int i;
 
     /* MAR <- PC */
     mar = PC;
     
+    dpu_loadReg(ir, memory);
+    
+    /* PC + 1 instruction */
+    PC += REG_SIZE;
+    
+}
+
+/***************************************************************
+ * Load Register: Load a register with memory at location of MAR.
+ *                MAR must be set before this function is called.
+ ******************************************************************/
+void dpu_loadReg(uint32_t reg, void * memory){
+    unsigned int i;
+
     /* MBR <- memory[MAR] */        /* PC <- + 1 instruction */
-    for(i = 0; i < CYCLES; i++, mar++, PC++){
+    for(i = 0; i < CYCLES; i++, mar++){
         mbr = mbr << SHIFT_BYTE;
         /* Add memory at mar to mbr */
         mbr += *((unsigned char*)memory + mar);
     }     
 
-    /* IR <- MBR */
-    ir = mbr;
-
+    /* Register <- MBR */
+    reg = mbr;
+    
 }
 
+/***************************************************************
+ * Store Register: Store an entire register into memory at MAR.
+ *                 MAR must be set before this function is called.
+ ******************************************************************/
+void dpu_storeReg(uint32_t reg, void * memory){
+    mbr = regfile[RD];
+
+    *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_3BYTE & BYTE_MASK);
+    *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_2BYTE & BYTE_MASK);
+    *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_BYTE & BYTE_MASK);
+    *((unsigned char*)memory + mar) = (unsigned char)mbr & BYTE_MASK;
+}
 
 /***************************************************************
  * Execute: Recognize instruction type, acknowledge instruction 
  *          fields, execute instruction based on instruction field values.
  *          Instruction field values are determined in the header.
  ******************************************************************/
-void dpu_execute(void *memory){
-    unsigned int i, temp;
+void dpu_execute(void * memory){
+    unsigned int i;
 
     /* Recognize instruction type */
     
@@ -559,8 +614,7 @@ void dpu_execute(void *memory){
             flag_carry = iscarry(regfile[RD], ~regfile[RN], 1);
         }else if(DATA_ROR){
             for(i = 0; i < regfile[RN]; i++){
-                temp = regfile[RD] & LSB_MASK;
-                flag_carry = temp;
+                flag_carry = regfile[RD] & LSB_MASK;
                 alu = regfile[RD] >> 1;
                 /* Set the MSB of the alu to the value shifted left */
                 if(flag_carry){
@@ -590,41 +644,29 @@ void dpu_execute(void *memory){
      * Load/Store 
      */
     else if(LOAD_STORE){
-        
         /* MAR <- regfile[RN] */
         mar = regfile[RN];
         
         if(LOAD_BIT){
-            printf("load: ");
             /*Load Byte*/
             if(BYTE_BIT){
-                printf("b\n");
-                /*mbr <- mem[mar]*/
-                mbr = *((unsigned char *)memory + mar);
-                regfile[RD] = mbr;
+                dpu_loadReg(regfile[RD], memory);
+                regfile[RD] = regfile[RD] & BYTE_MASK;
             }
             /*Load Double Word*/
             else{
-                printf("dw\n");
-                for(i = 0; i < CYCLES; i++, mar++){
-                    mbr = mbr << SHIFT_BYTE;
-                    mbr += *((unsigned char*)memory + mar);
-                }
-                regfile[RD] = mbr;
+                dpu_loadReg(regfile[RD], memory);
             }
         }else{
             /* MBR <- regfile[RD] */
             mbr = regfile[RD];
-            /*Store Byte*/
+            /* Store one byte of the register into memory */
             if(BYTE_BIT){
                 *((unsigned char*)memory + mar) = (unsigned char)mbr & BYTE_MASK;
             }
-            /*Store Double Word*/
+            /*Store double word*/
             else{
-                *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_3BYTE & BYTE_MASK);
-                *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_2BYTE & BYTE_MASK);
-                *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_BYTE & BYTE_MASK);
-                *((unsigned char*)memory + mar) = (unsigned char)mbr & BYTE_MASK;
+                dpu_storeReg(regfile[RD], memory);
             }
         } 
     /* 
@@ -636,7 +678,7 @@ void dpu_execute(void *memory){
             regfile[RD] = IMM_VALUE;    
             dpu_flags(regfile[RD]);
         }else if(CMP){
-            alu = ~(regfile[RD] + IMM_VALUE) + 1;
+            alu = regfile[RD] + ~IMM_VALUE + 1;
             dpu_flags(alu);
             flag_carry = iscarry(regfile[RD], ~IMM_VALUE, 0);
         }else if(ADD){
@@ -667,6 +709,7 @@ void dpu_execute(void *memory){
     }else if(PUSH_PULL){
         /* Debug */
         printf("push \n");
+        
     }
     /* 
      * Unonditional Branch 
@@ -682,40 +725,8 @@ void dpu_execute(void *memory){
     }else if(STOP){
         flag_stop = 1;
     }    
-    
-    return;
+
 }    
-
-
-/********************************************************************
- * Instruction Cycle:   
- *      An instruction cycle consists of a fetch, which provides two 
- *      instructions, and an execute for each of said instructions.  
- *      An IR flag is uses to determine the which instruction is to be
- *      executed from either 16-bit IR0 or IR1 of the 32-bit 
- *      Instruction Register.  If the flag is high, IR1 will be executed,
- *      then the flag will be set low.  If the flag is low, a fetch is made,
- *      providing IR0 and IR1 with the new instructions, and the flag is 
- *      then set high.  
- *
- ***********************************************************************/
-void dpu_instCycle(void * memory){
-    /* Determine which IR to use via IR Active flag */
-    if(flag_ir == 0){
-        /* Fetch new set of instructions */
-        dpu_fetch(memory);
-        /* Current instruction is now IR0 */
-        cir = IR0;
-        dpu_execute(memory);
-        flag_ir = 1;
-    }else{
-        cir = IR1;
-        dpu_execute(memory);
-        flag_ir = 0;
-    }     
-
-    return;
-}
 
 /*************************************************************
  *  dpu_chkbra() - Check condition code and flags, if a branch
@@ -775,9 +786,8 @@ void dpu_flags(uint32_t alu){
         flag_zero = 0;
     }    
     
-    flag_sign = alu & MSB32_MASK;
+    flag_sign = (alu & MSB32_MASK) >> MSBTOLSB;
 
-    return;
 }
 
 
