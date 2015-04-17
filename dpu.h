@@ -50,6 +50,11 @@
  *  SHIFT_2BYTE - 16 bits (2 bytes)
  *           
  *   MSB_MASK32 - Mask for most significant bit of 32-bits
+ *     SEX8TO32 - Sign extend 8 bits to 32 bits
+ *     MSBTOLSB - Bits to shift from MSB to LSB
+ *     SP_MASK  - As the stack pointer decrements from 0 to
+ *                0xFFFFFFFF, it will be out of memory range.
+ *                It must be masked to 14 bits. 
  */
 #define CYCLES  (REG_SIZE / BYTE_SIZE)
 #define SHIFT_3BYTE 24
@@ -61,6 +66,8 @@
 #define LSB_MASK    0x1
 #define BYTE_MASK   0xFF
 #define SEX8TO32    0xFFFFFF00
+#define MSBTOLSB    31
+#define SP_MASK     0x3FFF
 
 /* Instruction Formats  */
 #define FORMAT      (unsigned)cir >> 13
@@ -172,6 +179,10 @@ int dpu_reset();
 void dpu_help();
 
 void dpu_fetch(void * memory);
+
+void dpu_loadReg(uint32_t reg, void * memory);
+
+void dpu_storeReg(uint32_t reg, void * memory);
 
 void dpu_execute(void * memory);
 
