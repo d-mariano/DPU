@@ -500,9 +500,9 @@ void dpu_instCycle(void * memory){
  **************************************************************/         
 void dpu_fetch(void * memory){
     /* MAR <- PC */
-    mar = PC;
+   // mar = PC;
     
-    ir = dpu_loadReg(ir, memory);
+    ir = dpu_loadReg(PC, memory);
     
     /* PC + 1 instruction */
     PC += REG_SIZE;
@@ -512,8 +512,10 @@ void dpu_fetch(void * memory){
  * Load Register: Load a register with memory at location of MAR.
  *                MAR must be set before this function is called.
  ******************************************************************/
-uint32_t dpu_loadReg(uint32_t reg, void * memory){
+uint32_t dpu_loadReg(uint32_t marValue, void * memory){
     unsigned int i;
+
+    mar = marValue;
 
     /* MBR <- memory[MAR] */        /* PC <- + 1 instruction */
     for(i = 0; i < CYCLES; i++, mar++){
@@ -523,17 +525,17 @@ uint32_t dpu_loadReg(uint32_t reg, void * memory){
     }     
 
     /* Register <- MBR */
-    reg = mbr;
-
-    return reg;    
+    return mbr;    
 }
 
 /***************************************************************
  * Store Register: Store an entire register into memory at MAR.
- *                 MAR must be set before this function is called.
+ *                 
  ******************************************************************/
-void dpu_storeReg(void * memory){
-    mbr = regfile[RD];
+void dpu_storeReg(uint32_t marValue, uint32_t mbrValue, void * memory){
+    
+    mar = marValue;
+    mbr = mbrValue;
 
     *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_3BYTE & BYTE_MASK);
     *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_2BYTE & BYTE_MASK);
@@ -643,28 +645,28 @@ void dpu_execute(void * memory){
      */
     else if(LOAD_STORE){
         /* MAR <- regfile[RN] */
-        mar = regfile[RN];
         
         if(LOAD_BIT){
             /*Load Byte*/
             if(BYTE_BIT){
-                regfile[RD] = dpu_loadReg(regfile[RD], memory);
+                regfile[RD] = dpu_loadReg(regfile[RN], memory);
                 regfile[RD] = regfile[RD] & BYTE_MASK;
             }
             /*Load Double Word*/
             else{
-                regfile[RD] = dpu_loadReg(regfile[RD], memory);
+                regfile[RD] = dpu_loadReg(regfile[RN], memory);
             }
         }else{
-            /* MBR <- regfile[RD] */
             mbr = regfile[RD];
             /* Store one byte of the register into memory */
             if(BYTE_BIT){
+                mar = regfile[RN];
+                mbr = regfile[RD];
                 *((unsigned char*)memory + mar) = (unsigned char)mbr & BYTE_MASK;
             }
             /*Store double word*/
             else{
-                dpu_storeReg(memory);
+                dpu_storeReg(regfile[RN], regfile[RD], memory);
             }
         } 
     /* 
@@ -715,26 +717,72 @@ void dpu_execute(void * memory){
             PC = alu;
         }        
     /* 
-     * TODO PUSH / PULL
+     * PUSH / PULL
      */
     }else if(PUSH_PULL){
         /* PULL */
         if(LOAD_BIT){
             /* High Registers */
-           /* (HIGH_BIT){
-                for(i =
-            }*/
+            if(HIGH_BIT){
+                /* Registers 8 - 15 */
+                for(i = HI_REG; i < RF_SIZE; i++){
+                    /* Registers must be represented by what bit number
+                    * they occupy.  HIGH reg's subtract half the list size.*/
+                    if(dpu_chkRList( i - HALF_RF )){
+                        /*If the current index is set on the register list: */
+                        /* Set MAR to be the stack pointer */
+                        regfile[i] = dpu_loadReg(SP, memory);
+                        /* Post increment */
+                        alu = SP + REG_SIZE;
+                        SP = alu;
+                    }
+                }
+            }
             /* Low Registers */
-            //else{
+            else{
+                /* Registers 0 - 7 */
+                for(i = 0; i <= LOW_LIMIT; i++){
+                    if(dpu_chkRList(i)){
+                        regfile[i] = dpu_loadReg(SP, memory);
+                        alu = SP + REG_SIZE;
+                        SP = alu;
+                    }
+                }
+            }
 
-           /* }*/
+            /* Check if PC is to be pulled for return. */
+            if(RET_BIT){
+                PC = dpu_loadReg(SP, memory);
+                alu = SP + REG_SIZE;
+                SP = alu;
+            }
+
         }
         /* PUSH */
         else{
+            if(RET_BIT){
+                /* Pre-decrement */
+                alu = SP + ~REG_SIZE + 1;
+                SP = alu;
+                /* Store the Link Register/return address for jump-returns */
+                dpu_storeReg(SP, LR, memory);
+            }
             if(HIGH_BIT){
-
+                for(i = (RF_SIZE - 1); i >= HI_REG; i--){
+                    if(dpu_chkRList( i - HALF_RF )){
+                        alu = SP + ~REG_SIZE + 1;
+                        SP = alu;
+                        dpu_storeReg(SP, regfile[i], memory);
+                    }
+                }
             }else{
-
+                for(i = LOW_LIMIT; i >= 0; i--){
+                    if(dpu_chkRList(i)){
+                        alu = SP + ~REG_SIZE + 1;    
+                        SP = alu;
+                        dpu_storeReg(SP, regfile[i], memory);
+                    }
+                }
             }
         }
     }
@@ -746,6 +794,10 @@ void dpu_execute(void * memory){
             LR = PC;
         }    
         PC = OFFSET12;
+        /* Make sure the IR flag is not still HI after the PC has changed.
+         * If it is, IR1 will execute before a fetch is made to reach the 
+         * instruction being branched to.
+         */
         flag_ir = 0;
     /* 
      * Stop 
@@ -802,6 +854,34 @@ int dpu_chkbra(){
     return 0;
 }
 
+
+/*************************************************************************
+ * dpu_chkRList() - Checks the register list field of the current PUSH/PULL  
+ *           instruction to determine if the register file index passed
+ *           to this function is to be PUSH/PULLed; returns 0 if it won't.
+ *           For HIGH register PUSH/PULLs, the passed index must be 
+ *           subtracted by half the size of the register file.
+ ********************************************************************/
+int dpu_chkRList(int index){
+    switch(index){
+        case 0:
+            return REG_LIST & R0;
+        case 1:
+            return REG_LIST & R1;
+        case 2:
+            return REG_LIST & R2;
+        case 3:
+            return REG_LIST & R3;
+        case 4:
+            return REG_LIST & R4;
+        case 5:
+            return REG_LIST & R5;
+        case 6:
+            return REG_LIST & R6;
+        case 7:
+            return REG_LIST & R7;
+    }
+}
 
 /****************************************************************
  * dpu_flags() - This routine checks for flags zero and sign, 
