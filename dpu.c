@@ -712,7 +712,7 @@ void dpu_execute(void * memory){
              */
             if(flag_ir != 0){
                 flag_ir = 0;
-                alu = alu + ~2 + 1;
+                alu = alu + ~THUMB_SIZE + 1;
             }
             PC = alu;
         }        
