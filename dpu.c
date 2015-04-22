@@ -473,18 +473,17 @@ void dpu_help(){
 void dpu_instCycle(void * memory){
     /* Determine which IR to use via IR Active flag */
     if(flag_ir == 0){
+        flag_ir = 1;
         /* Fetch new set of instructions */
         dpu_fetch(memory);
         /* Current instruction is now IR0 */
         cir = IR0;
         dpu_execute(memory);
-        flag_ir = 1;
     }else{
+        flag_ir = 0;
         cir = IR1;
         dpu_execute(memory);
-        flag_ir = 0;
     }     
-
 }
 
 
@@ -500,22 +499,20 @@ void dpu_instCycle(void * memory){
  *         the Instruction Register.
  **************************************************************/         
 void dpu_fetch(void * memory){
-
     /* MAR <- PC */
     mar = PC;
     
-    dpu_loadReg(ir, memory);
+    ir = dpu_loadReg(ir, memory);
     
     /* PC + 1 instruction */
     PC += REG_SIZE;
-    
 }
 
 /***************************************************************
  * Load Register: Load a register with memory at location of MAR.
  *                MAR must be set before this function is called.
  ******************************************************************/
-void dpu_loadReg(uint32_t reg, void * memory){
+uint32_t dpu_loadReg(uint32_t reg, void * memory){
     unsigned int i;
 
     /* MBR <- memory[MAR] */        /* PC <- + 1 instruction */
@@ -527,14 +524,15 @@ void dpu_loadReg(uint32_t reg, void * memory){
 
     /* Register <- MBR */
     reg = mbr;
-    
+
+    return reg;    
 }
 
 /***************************************************************
  * Store Register: Store an entire register into memory at MAR.
  *                 MAR must be set before this function is called.
  ******************************************************************/
-void dpu_storeReg(uint32_t reg, void * memory){
+void dpu_storeReg(void * memory){
     mbr = regfile[RD];
 
     *((unsigned char*)memory + mar++) = (unsigned char)(mbr >> SHIFT_3BYTE & BYTE_MASK);
@@ -650,12 +648,12 @@ void dpu_execute(void * memory){
         if(LOAD_BIT){
             /*Load Byte*/
             if(BYTE_BIT){
-                dpu_loadReg(regfile[RD], memory);
+                regfile[RD] = dpu_loadReg(regfile[RD], memory);
                 regfile[RD] = regfile[RD] & BYTE_MASK;
             }
             /*Load Double Word*/
             else{
-                dpu_loadReg(regfile[RD], memory);
+                regfile[RD] = dpu_loadReg(regfile[RD], memory);
             }
         }else{
             /* MBR <- regfile[RD] */
@@ -666,7 +664,7 @@ void dpu_execute(void * memory){
             }
             /*Store double word*/
             else{
-                dpu_storeReg(regfile[RD], memory);
+                dpu_storeReg(memory);
             }
         } 
     /* 
@@ -700,9 +698,22 @@ void dpu_execute(void * memory){
         if(dpu_chkbra()){
             /* Add relative address as a signed 8-bit */
             alu = PC + (int8_t)COND_ADDR;
+
+            /* If IR1 is going to be executed next, the IR flag must be
+             * set to 0.  If this is not done, IR1's instruction will be
+             * executed as it has not been changed due to not fetching new 
+             * instructions right after changing the PC.  Also, if the IR flag is 
+             * high, then the PC was pointing to two instructions after the one 
+             * that is in IR0, being the branch that just executed. We now have to 
+             * decrement the ALU value by 2 to compensate for this before commiting
+             * to the PC.
+             */
+            if(flag_ir != 0){
+                flag_ir = 0;
+                alu = alu + ~2 + 1;
+            }
             PC = alu;
-        }
-        
+        }        
     /* 
      * TODO PUSH / PULL
      */
@@ -710,13 +721,13 @@ void dpu_execute(void * memory){
         /* PULL */
         if(LOAD_BIT){
             /* High Registers */
-            if(HIGH_BIT){
+           /* (HIGH_BIT){
                 for(i =
-            }
+            }*/
             /* Low Registers */
-            else{
+            //else{
 
-            }
+           /* }*/
         }
         /* PUSH */
         else{
@@ -735,6 +746,7 @@ void dpu_execute(void * memory){
             LR = PC;
         }    
         PC = OFFSET12;
+        flag_ir = 0;
     /* 
      * Stop 
      */
@@ -756,7 +768,7 @@ int dpu_chkbra(){
             return 1;
         }    
     }else if(NE){
-        if(!flag_zero){
+        if(flag_zero == 0){
             return 1;
         }
     }else if(CS){
@@ -776,11 +788,11 @@ int dpu_chkbra(){
             return 1;
         }
     }else if(HI){
-        if(flag_carry && !flag_zero){
+        if(flag_carry && flag_zero == 0){
             return 1;   
         }
     }else if(LS){
-        if(!flag_carry || flag_zero){
+        if(flag_carry == 0 || flag_zero){
             return 1;
         }
     }else if(AL){
