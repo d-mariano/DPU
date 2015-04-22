@@ -167,7 +167,7 @@ static uint8_t flag_sign;
 static uint8_t flag_zero;
 static uint8_t flag_carry;
 static uint8_t flag_stop;
-static uint8_t flag_ir;
+static uint8_t flag_ir; 
 
 
 /* Prototypes */
@@ -195,9 +195,9 @@ void dpu_help();
 
 void dpu_fetch(void * memory);
 
-void dpu_loadReg(uint32_t reg, void * memory);
+uint32_t dpu_loadReg(uint32_t reg, void * memory);
 
-void dpu_storeReg(uint32_t reg, void * memory);
+void dpu_storeReg(void * memory);
 
 void dpu_execute(void * memory);
 
