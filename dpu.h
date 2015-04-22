@@ -14,6 +14,7 @@
 #define BYTE_SIZE       0x1
 #define REG_SIZE_BITS   0x20
 #define REG_SIZE        0x4
+#define THUMB_SIZE      0x2
 #define RF_SIZE         0x10
 #define MAX32           0xFFFFFFFF
 
