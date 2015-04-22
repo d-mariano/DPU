@@ -92,7 +92,7 @@
 #define LOAD_BIT    ((cir >> 11) & 0x1)
 #define BYTE_BIT    ((cir >> 10) & 0x1)
 #define HIGH_BIT    ((cir >> 10) & 0x1)
-#define R_BIT       ((cir >> 8) & 0x1)
+#define RET_BIT     ((cir >> 8) & 0x1)
 #define REG_LIST    cir & 0xFF
 #define LINK_BIT    ((cir >> 12) & 0x1)
 #define OFFSET12    cir & 0xFFF
@@ -132,9 +132,18 @@
 #define LS 0x9 == CONDITION
 #define AL 0xE == CONDITION
 
-/* PUSH/PULL Definitions */
-#define HI_REG 0x8
-#define LO_REG 0x7
+/***********************************************************
+ * PUSH/PULL Definitions 
+ * 
+ *    HI_REG - First register of the upper half.       
+ * LOW_LIMIT - Highest index of the lower half of registers.
+ * 
+ * R0-R7  - Bit numbers for registers in the register list
+ *           instruction field.
+ ********************************************************/
+#define HI_REG      0x8
+#define LOW_LIMIT   0x7
+#define HALF_RF     RF_SIZE/2
 
 #define R0  0x1
 #define R1  0x2
@@ -195,9 +204,9 @@ void dpu_help();
 
 void dpu_fetch(void * memory);
 
-uint32_t dpu_loadReg(uint32_t reg, void * memory);
+uint32_t dpu_loadReg(uint32_t marValue, void * memory);
 
-void dpu_storeReg(void * memory);
+void dpu_storeReg(uint32_t marValue, uint32_t mbrValue, void * memory);
 
 void dpu_execute(void * memory);
 
