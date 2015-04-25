@@ -549,7 +549,7 @@ void dpu_storeReg(uint32_t marValue, uint32_t mbrValue, void * memory){
  *          Instruction field values are determined in the header.
  ******************************************************************/
 void dpu_execute(void * memory){
-    unsigned int i;
+    int i;
 
     /* Recognize instruction type */
     
@@ -731,7 +731,7 @@ void dpu_execute(void * memory){
                     if(dpu_chkRList( i - HALF_RF )){
                         /*If the current index is set on the register list: */
                         /* Set MAR to be the stack pointer */
-                        regfile[i] = dpu_loadReg(SP, memory);
+                        regfile[i] = dpu_loadReg(SP & SP_MASK, memory);
                         /* Post increment */
                         alu = SP + REG_SIZE;
                         SP = alu;
@@ -743,7 +743,7 @@ void dpu_execute(void * memory){
                 /* Registers 0 - 7 */
                 for(i = 0; i <= LOW_LIMIT; i++){
                     if(dpu_chkRList(i)){
-                        regfile[i] = dpu_loadReg(SP, memory);
+                        regfile[i] = dpu_loadReg(SP & SP_MASK, memory);
                         alu = SP + REG_SIZE;
                         SP = alu;
                     }
@@ -755,7 +755,7 @@ void dpu_execute(void * memory){
                 /* If the IR flag is 1, change it to 0 so the next thumb 
                  * instruction is not executed. 
                  */
-                PC = dpu_loadReg(SP, memory);
+                PC = dpu_loadReg(SP & SP_MASK, memory);
                 if(flag_ir !=0){
                     flag_ir = 0;
                 }
@@ -767,26 +767,29 @@ void dpu_execute(void * memory){
         /* PUSH */
         else{
             if(RET_BIT){
-                /* Pre-decrement */
+                /* Pre-decrement 
+                 * Considering there is only 
+                 * */
                 alu = SP + ~REG_SIZE + 1;
-                SP = alu;
+                SP = (SP_MASK & alu) >> (unsigned) SHIFT_2BYTE;
                 /* Store the Link Register/return address for jump-returns */
-                dpu_storeReg(SP, LR, memory);
+                dpu_storeReg(SP & SP_MASK, LR, memory);
             }
             if(HIGH_BIT){
                 for(i = (RF_SIZE - 1); i >= HI_REG; i--){
                     if(dpu_chkRList( i - HALF_RF )){
                         alu = SP + ~REG_SIZE + 1;
                         SP = alu;
-                        dpu_storeReg(SP, regfile[i], memory);
+                        dpu_storeReg(SP & SP_MASK, regfile[i], memory);
                     }
                 }
             }else{
-                for(i = LOW_LIMIT; i >= 0; i--){
+                for(i = LOW_LIMIT; i >= 0; --i){
                     if(dpu_chkRList(i)){
                         alu = SP + ~REG_SIZE + 1;    
                         SP = alu;
-                        dpu_storeReg(SP, regfile[i], memory);
+                        //SP_DEC;
+                        dpu_storeReg(SP & SP_MASK, regfile[i], memory);
                     }
                 }
             }
