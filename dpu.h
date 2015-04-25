@@ -36,10 +36,6 @@
 #define LR      regfile[RF_LR]
 #define PC      regfile[RF_PC]
 
-/* Stack Pointer Definitions */
-#define SP_DEC  SP = SP + ~1 + 1
-#define SP_MASK 0x3FFF
-
 /* Instruction Registers */
 #define IR0 (unsigned)ir >> 16 
 #define IR1 ir & 0xFFFF
@@ -71,6 +67,10 @@
 #define BYTE_MASK   0xFF
 #define SEX8TO32    0xFFFFFF00
 #define MSBTOLSB    31
+
+/* Stack Pointer Definitons */
+#define SP_MASK 0x3FFF
+
 
 /* Instruction Formats  */
 #define FORMAT      (unsigned)cir >> 13
@@ -143,7 +143,7 @@
  *           instruction field.
  ********************************************************/
 #define HI_REG      0x8
-#define LOW_LIMIT   0x7
+#define LOW_LIMIT   (unsigned)0x7
 #define HALF_RF     RF_SIZE/2
 
 #define R0  0x1
