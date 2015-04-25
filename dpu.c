@@ -752,7 +752,13 @@ void dpu_execute(void * memory){
 
             /* Check if PC is to be pulled for return. */
             if(RET_BIT){
+                /* If the IR flag is 1, change it to 0 so the next thumb 
+                 * instruction is not executed. 
+                 */
                 PC = dpu_loadReg(SP, memory);
+                if(flag_ir !=0){
+                    flag_ir = 0;
+                }
                 alu = SP + REG_SIZE;
                 SP = alu;
             }
