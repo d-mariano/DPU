@@ -771,7 +771,7 @@ void dpu_execute(void * memory){
                  * Considering there is only 
                  * */
                 alu = SP + ~REG_SIZE + 1;
-                SP = SP = alu;
+                SP = alu;
                 /* Store the Link Register/return address for jump-returns */
                 dpu_storeReg(SP & SP_MASK, LR, memory);
             }
