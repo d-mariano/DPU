@@ -727,9 +727,10 @@ void dpu_execute(void * memory){
                 /* Registers 8 - 15 */
                 for(i = HI_REG; i < RF_SIZE; i++){
                     /* Registers must be represented by what bit number
-                    * they occupy.  HIGH reg's subtract half the list size.*/
+                       they occupy.  HIGH reg's subtract half the list size.*/
                     if(dpu_chkRList( i - HALF_RF )){
                         /*If the current index is set on the register list: */
+
                         /* Set MAR to be the stack pointer */
                         regfile[i] = dpu_loadReg(SP & SP_MASK, memory);
                         /* Post increment */
@@ -752,9 +753,8 @@ void dpu_execute(void * memory){
 
             /* Check if PC is to be pulled for return. */
             if(RET_BIT){
-                /* If the IR flag is 1, change it to 0 so the next thumb 
-                 * instruction is not executed. 
-                 */
+                 /* If the IR flag is 1, change it to 0 so the next thumb 
+                    instruction is not executed. */
                 PC = dpu_loadReg(SP & SP_MASK, memory);
                 if(flag_ir !=0){
                     flag_ir = 0;
@@ -767,9 +767,7 @@ void dpu_execute(void * memory){
         /* PUSH */
         else{
             if(RET_BIT){
-                /* Pre-decrement 
-                 * Considering there is only 
-                 * */
+                 /* Pre-decrement */
                 alu = SP + ~REG_SIZE + 1;
                 SP = alu;
                 /* Store the Link Register/return address for jump-returns */
